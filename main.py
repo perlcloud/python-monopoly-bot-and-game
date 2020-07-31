@@ -1,0 +1,340 @@
+import random
+import landings
+
+
+class Dice:
+
+    def roll(self):
+        dice = [random.randint(1, 6), random.randint(1, 6)]
+        return {
+            0: dice[0],
+            1: dice[1],
+            "total": dice[0] + dice[1],
+            "same": dice[0] == dice[1],
+        }
+
+
+class Board:
+    GO = 0
+    MEDITIRANEAN_AVE = 1
+    COMMUNITY_CHEST_1 = 2
+    BALTIC_AVE = 3
+    INCOME_TAX = 4
+    READING_RAILROAD = 5
+    ORIENTAL_AVE = 6
+    CHANCE_1 = 7
+    VERMONT_AVE = 8
+    CONNECTICUT_AVE = 9
+    JAIL = 10
+    ST_CHARLES_PLACE = 11
+    ELECTRIC_COMPANY = 12
+    STATES_AVE = 13
+    VIRGINIA_AVE = 14
+    PENNSYLVANIA_RAILROAD = 15
+    ST_JAMES_PLACE = 16
+    COMMUNITY_CHEST_2 = 17
+    TENNESSEE_AVE = 18
+    NEW_YORK_AVE = 19
+    FREE_PARKING = 20
+    KENTUCKY_AVE = 21
+    CHANCE_2 = 22
+    INDIANA_AVE = 23
+    ILLINOIS_AVE = 24
+    BO_RAILROAD = 25
+    ATLTLANTIC_AVE = 26
+    VENTNOR_AVE = 27
+    WATER_WORKS = 28
+    MARVIN_GARDENS = 29
+    GO_TO_JAIL = 30
+    PACIFIC_AVE = 31
+    NORTH_CAROLINA_AVE = 32
+    COMMUNITY_CHEST_3 = 33
+    PENNSYLVANIA_AVE = 34
+    SHORTLINE = 35
+    CHANCE_3 = 36
+    PARK_PLACE = 37
+    LUXERY_TAX = 38
+    BOARDWALK = 39
+
+    chance = landings.Chance()
+    community_chest = landings.CommunityChest()
+    landings = {
+        GO: landings.Go(),
+        MEDITIRANEAN_AVE: landings.MediterRaneanAvenue(),
+        COMMUNITY_CHEST_1: landings.CommunityChest(),
+        BALTIC_AVE: landings.BalticAvenue(),
+        INCOME_TAX: landings.IncomeTax(),
+        READING_RAILROAD: landings.ReadingRailroad(),
+        ORIENTAL_AVE: landings.OrientalAvenue(),
+        CHANCE_1: chance,
+        VERMONT_AVE: landings.VermontAvenue(),
+        CONNECTICUT_AVE: landings.ConnecticutAvenue(),
+        JAIL: landings.Jail(),
+        ST_CHARLES_PLACE: landings.StCharlesPlace(),
+        ELECTRIC_COMPANY: landings.ElectricCompany(),
+        STATES_AVE: landings.StatesAvenue(),
+        VIRGINIA_AVE: landings.VirginiaAvenue(),
+        PENNSYLVANIA_RAILROAD: landings.PennsylvaniaRailroad(),
+        ST_JAMES_PLACE: landings.StJamesPlace(),
+        COMMUNITY_CHEST_2: community_chest,
+        TENNESSEE_AVE: landings.TennesseeAvenue(),
+        NEW_YORK_AVE: landings.NewYorkAvenue(),
+        FREE_PARKING: landings.FreeParking(),
+        KENTUCKY_AVE: landings.KentuckyAvenue(),
+        CHANCE_2: chance,
+        INDIANA_AVE: landings.IndianaAvenue(),
+        ILLINOIS_AVE: landings.IllinoisAvenue(),
+        BO_RAILROAD: landings.BORailroad(),
+        ATLTLANTIC_AVE: landings.AtlanticAvenue(),
+        VENTNOR_AVE: landings.VentnorAvenue(),
+        WATER_WORKS: landings.WaterWorks(),
+        MARVIN_GARDENS: landings.MarvinGardens(),
+        GO_TO_JAIL: landings.GoToJail(),
+        PACIFIC_AVE: landings.PacificAvenue(),
+        NORTH_CAROLINA_AVE: landings.NorthCarolinaAvenue(),
+        COMMUNITY_CHEST_3: community_chest,
+        PENNSYLVANIA_AVE: landings.PennsylvaniaAvenue(),
+        SHORTLINE: landings.ShortLine(),
+        CHANCE_3: chance,
+        PARK_PLACE: landings.ParkPlace(),
+        LUXERY_TAX: landings.LuxuryTax(),
+        BOARDWALK: landings.Boardwalk(),
+    }
+    bord_len = len(landings) - 1
+
+    def advance(self, current_position, roll_value):
+        if roll_value > 12:
+            raise ValueError("You cannot roll a value > 12")
+        elif roll_value < 2:
+            raise ValueError("You cannot roll a value < 2")
+
+        passed_go = False
+
+        next_position = current_position + roll_value
+        if next_position > self.bord_len:
+            passed_go = True
+            next_position = next_position - self.bord_len - 1
+
+        return (next_position, self.landings[next_position]), passed_go
+
+    def next_utility(self, position):
+        if self.GO <= position <= self.ST_CHARLES_PLACE or self.MARVIN_GARDENS <= position <= self.BOARDWALK:
+            return self.ELECTRIC_COMPANY
+        elif self.ELECTRIC_COMPANY <= position <= self.VENTNOR_AVE:
+            return self.WATER_WORKS
+
+    def next_railroad(self, position):
+        if self.GO <= position <= self.INCOME_TAX or self.CHANCE_3 <= position <= self.BOARDWALK:
+            return self.READING_RAILROAD
+        elif self.READING_RAILROAD <= position <= self.VIRGINIA_AVE:
+            return self.PENNSYLVANIA_RAILROAD
+        elif self.PENNSYLVANIA_RAILROAD <= position <= self.ILLINOIS_AVE:
+            return self.BO_RAILROAD
+        elif self.BO_RAILROAD <= position <= self.PENNSYLVANIA_AVE:
+            return self.SHORTLINE
+
+
+class Player:
+    position = (0, Board.landings[0])
+    name = None
+    dice = Dice()
+    cash = 1500
+    get_out_of_jail_free_cards = 0
+    in_jail = False
+
+    def __init__(self, name):
+        self.name = name
+
+    def _advance_position(self, roll_value):
+        self.position, passed_go = game.board.advance(self.position[0], roll_value)
+        return passed_go
+
+    def _move_position(self, position_id, backwards_movement=False):
+        passed_go = True if self.position[0] > position_id and not backwards_movement or position_id == 0 else False
+        self.position = (position_id, game.board.landings[position_id])
+        return passed_go
+
+    def _bank_collect(self, amount):
+        self.cash += amount
+        # TODO remove from bank
+
+    def _pay_pie(self, amount):
+        self.cash -= amount
+        # TODO Add to pie
+
+    def turn(self):
+        print(f"Player {self.name} is on {self.position[1]}")
+
+        # roll dice
+        roll = self.dice.roll()
+        print(f"Player {self.name} rolled a {roll['total']}")
+
+        # move players piece
+        passed_go = self._advance_position(roll["total"])
+        print(f"Player {self.name} is now on {self.position[1]}")
+
+        if passed_go:
+            self._bank_collect(200)
+
+        # take action based on where the player landed
+        position_id, position = self.position
+
+        if isinstance(position, landings.Chance):
+            # Player landed on Chance, pick a card and act on its instructions
+            card_id, card_text = position.select_card()
+
+            if card_id == landings.Chance.ADVANCE_TO_GO:
+                self._move_position(Board.GO)
+                self._bank_collect(200)
+                print(f"Player {self.name} has been moved to {self.position[1]} and got $200")
+
+            elif card_id == landings.Chance.ADVANCE_TO_ILLINOIS:
+                passed_go = self._move_position(Board.ILLINOIS_AVE)
+                if passed_go:
+                    self._bank_collect(200)
+
+            elif card_id == landings.Chance.ADVANCE_TO_ST_CHARLES_PLACE:
+                passed_go = self._move_position(Board.ST_CHARLES_PLACE)
+                if passed_go:
+                    self._bank_collect(200)
+
+            elif card_id == landings.Chance.ADVANCE_TO_NEAREST_UTILITY:
+                nearest_utility = game.board.next_utility(position_id)
+                passed_go = self._move_position(nearest_utility)
+                if passed_go:
+                    self._bank_collect(200)
+
+            elif card_id == landings.Chance.ADVANCE_TO_NEAREST_RAILROAD:
+                nearest_railroad = game.board.next_railroad(position_id)
+                passed_go = self._move_position(nearest_railroad)
+                if passed_go:
+                    self._bank_collect(200)
+
+            elif card_id == landings.Chance.BANKS_PAYS_DIVIDEND:
+                self._bank_collect(50)
+
+            elif card_id == landings.Chance.GET_OUT_OF_JAIL_FREE:
+                self.get_out_of_jail_free_cards += 1
+
+            elif card_id == landings.Chance.GO_BACK_THREE:
+                go_back_to = position_id - 3 if position_id >= 3 else \
+                    49 if position_id == 2 else \
+                    48 if position_id == 1 else 47
+                self._move_position(go_back_to, backwards_movement=True)
+
+            elif card_id == landings.Chance.GO_TO_JAIL:
+                self.position = 10, self._move_position(Board.JAIL)
+                self.in_jail = True
+                # TODO write Jail code
+
+            elif card_id == landings.Chance.GENERAL_REPAIRS:
+                pass
+                # TODO write code to remove value from user based on houses/hotels
+
+            elif card_id == landings.Chance.POOR_TAX:
+                self._pay_pie(15)
+
+            elif card_id == landings.Chance.TRIP_TO_READING_RAILROAD:
+                passed_go = self._move_position(Board.READING_RAILROAD)
+                if passed_go:
+                    self._bank_collect(200)
+
+            elif card_id == landings.Chance.TRIP_TO_BOARDWALK:
+                self._move_position(Board.BOARDWALK)
+
+            elif card_id == landings.Chance.CHAIRMAN_OF_THE_BOARD:
+                pass
+                # TODO pay each player 50
+
+            elif card_id == landings.Chance.BUILDING_LOAN_LOAN:
+                self._bank_collect(150)
+
+            elif card_id == landings.Chance.WON_CROSSWORD_COMPETITION:
+                self._bank_collect(100)
+
+        elif isinstance(position, landings.CommunityChest):
+            # Player landed on Community Chest, pick a card and act on its instructions
+            card_id, card_text = position.select_card()
+
+            if card_id == landings.CommunityChest.ADVANCE_TO_GO:
+                self._move_position(Board.GO)
+                self._bank_collect(200)
+                print(f"Player {self.name} has been moved to {self.position[1]} and got $200")
+
+            elif card_id == landings.CommunityChest.BANK_ERROR:
+                pass
+
+            elif card_id == landings.CommunityChest.DOCTOR_FEE:
+                pass
+
+            elif card_id == landings.CommunityChest.STOCK_SALE:
+                pass
+
+            elif card_id == landings.CommunityChest.GET_OUT_OF_JAIL_FREE:
+                pass
+
+            elif card_id == landings.CommunityChest.GO_TO_JAIL:
+                pass
+
+            elif card_id == landings.CommunityChest.OPERA_NIGHT:
+                pass
+
+            elif card_id == landings.CommunityChest.HOLIDAY_FUND:
+                pass
+
+            elif card_id == landings.CommunityChest.TAX_REFUND:
+                pass
+
+            elif card_id == landings.CommunityChest.BIRTHDAY:
+                pass
+
+            elif card_id == landings.CommunityChest.LIFE_INSURANCE :
+                pass
+
+            elif card_id == landings.CommunityChest.HOSPITAL_FEES :
+                pass
+
+            elif card_id == landings.CommunityChest.SCHOOL_FEES :
+                pass
+
+            elif card_id == landings.CommunityChest.CONSULT :
+                pass
+
+            elif card_id == landings.CommunityChest.STREET_REPAIRS :
+                pass
+
+            elif card_id == landings.CommunityChest.BEAUTY_CONTEST :
+                pass
+
+            elif card_id == landings.CommunityChest.INHERITANCE :
+                pass
+
+
+
+        # take actions
+        if passed_go:
+            print(f"Player {self.name} passed Go!!!")
+
+
+class Game:
+    players = []
+    board = Board()
+
+    def add_player(self, player):
+        self.players.append(player)
+
+    def play(self):
+        first_round = True
+        while first_round or input("\tDo you want to take another round? ").lower() in ["yes", "y", ""]:
+            first_round = False
+
+            for player in self.players:
+                player.turn()
+
+
+if __name__ == '__main__':
+    game = Game()
+    game.add_player(Player("Avi"))
+    game.add_player(Player("Avrohom"))
+
+    game.play()
