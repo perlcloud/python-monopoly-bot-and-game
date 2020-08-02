@@ -18,6 +18,7 @@ class Dice:
 
 class Board:
     """Class representing the Monopoly board with helpful gameplay functions"""
+
     GO = 0
     MEDITIRANEAN_AVE = 1
     COMMUNITY_CHEST_1 = 2
@@ -108,7 +109,9 @@ class Board:
     def advance(self, current_position, roll_value):
         """Calculate the players new position based on their dice roll"""
         if not 2 <= roll_value <= 12:
-            raise ValueError(f"You cannot roll a value of {roll_value}. Only 2-12 are valid values.")
+            raise ValueError(
+                f"You cannot roll a value of {roll_value}. Only 2-12 are valid values."
+            )
 
         passed_go = False
         next_position = current_position + roll_value
@@ -120,14 +123,20 @@ class Board:
 
     def next_utility(self, position):
         """Return the next utility after the players current position"""
-        if self.GO <= position <= self.ST_CHARLES_PLACE or self.MARVIN_GARDENS <= position <= self.BOARDWALK:
+        if (
+            self.GO <= position <= self.ST_CHARLES_PLACE
+            or self.MARVIN_GARDENS <= position <= self.BOARDWALK
+        ):
             return self.ELECTRIC_COMPANY
         elif self.ELECTRIC_COMPANY <= position <= self.VENTNOR_AVE:
             return self.WATER_WORKS
 
     def next_railroad(self, position):
         """Return the next railroad after the players current position"""
-        if self.GO <= position <= self.INCOME_TAX or self.CHANCE_3 <= position <= self.BOARDWALK:
+        if (
+            self.GO <= position <= self.INCOME_TAX
+            or self.CHANCE_3 <= position <= self.BOARDWALK
+        ):
             return self.READING_RAILROAD
         elif self.READING_RAILROAD <= position <= self.VIRGINIA_AVE:
             return self.PENNSYLVANIA_RAILROAD
@@ -139,6 +148,7 @@ class Board:
 
 class PlayerBase:
     """Base Class for a Monopoly player"""
+
     position = (0, Board.landings[0])
     name = None
     dice = Dice()
@@ -152,19 +162,27 @@ class PlayerBase:
 
 class Game:
     """Gameplay class handling player turns"""
+
     players = []
     board = Board()
     current_player = None
 
     def _advance_position(self, roll_value):
         """Advances a players position based on a spin of the dice"""
-        self.current_player.position, passed_go = game.board.advance(self.current_player.position[0], roll_value)
+        self.current_player.position, passed_go = game.board.advance(
+            self.current_player.position[0], roll_value
+        )
         return passed_go
 
     def _move_position(self, position_id, backwards_movement=False):
         """Changes a player to a new position specified"""
-        passed_go = True if self.current_player.position[0] > position_id \
-                            and not backwards_movement or position_id == 0 else False
+        passed_go = (
+            True
+            if self.current_player.position[0] > position_id
+            and not backwards_movement
+            or position_id == 0
+            else False
+        )
         self.current_player.position = (position_id, game.board.landings[position_id])
         return passed_go
 
@@ -179,7 +197,9 @@ class Game:
 
     def run_turn(self):
         """Runs the run_turn for the current player"""
-        print(f"Player {self.current_player.name} is on {self.current_player.position[1]}")
+        print(
+            f"Player {self.current_player.name} is on {self.current_player.position[1]}"
+        )
 
         # roll dice
         roll = self.current_player.dice.roll()
@@ -187,7 +207,9 @@ class Game:
 
         # move players piece
         passed_go = self._advance_position(roll["total"])
-        print(f"Player {self.current_player.name} is now on {self.current_player.position[1]}")
+        print(
+            f"Player {self.current_player.name} is now on {self.current_player.position[1]}"
+        )
 
         if passed_go:
             self._bank_collect(200)
@@ -202,7 +224,9 @@ class Game:
             if card_id == landings.Chance.ADVANCE_TO_GO:
                 self._move_position(Board.GO)
                 self._bank_collect(200)
-                print(f"Player {self.current_player.name} has been moved to {self.current_player.position[1]} and got $200")
+                print(
+                    f"Player {self.current_player.name} has been moved to {self.current_player.position[1]} and got $200"
+                )
 
             elif card_id == landings.Chance.ADVANCE_TO_ILLINOIS:
                 passed_go = self._move_position(Board.ILLINOIS_AVE)
@@ -233,9 +257,15 @@ class Game:
                 self.current_player.get_out_of_jail_free_cards += 1
 
             elif card_id == landings.Chance.GO_BACK_THREE:
-                go_back_to = position_id - 3 if position_id >= 3 else \
-                    49 if position_id == 2 else \
-                        48 if position_id == 1 else 47
+                go_back_to = (
+                    position_id - 3
+                    if position_id >= 3
+                    else 49
+                    if position_id == 2
+                    else 48
+                    if position_id == 1
+                    else 47
+                )
                 self._move_position(go_back_to, backwards_movement=True)
 
             elif card_id == landings.Chance.GO_TO_JAIL:
@@ -275,7 +305,9 @@ class Game:
             if card_id == landings.CommunityChest.ADVANCE_TO_GO:
                 self._move_position(Board.GO)
                 self._bank_collect(200)
-                print(f"Player {self.current_player.name} has been moved to {self.current_player.position[1]} and got $200")
+                print(
+                    f"Player {self.current_player.name} has been moved to {self.current_player.position[1]} and got $200"
+                )
 
             elif card_id == landings.CommunityChest.BANK_ERROR:
                 pass
@@ -332,7 +364,11 @@ class Game:
     def play(self):
         """Runs the Monopoly game"""
         first_round = True
-        while first_round or input("\tDo you want to take another round? ").lower() in ["yes", "y", ""]:
+        while first_round or input("\tDo you want to take another round? ").lower() in [
+            "yes",
+            "y",
+            "",
+        ]:
             first_round = False
 
             for player in self.players:
@@ -341,7 +377,7 @@ class Game:
                 self.run_turn()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     game = Game()
     game.add_player(PlayerBase("Avi"))
     game.add_player(PlayerBase("Avrohom"))
