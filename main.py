@@ -3,8 +3,10 @@ import landings
 
 
 class Dice:
+    """Dice class for executing and tracking a players rolls"""
 
     def roll(self):
+        """Roll 2 Dice"""
         dice = [random.randint(1, 6), random.randint(1, 6)]
         return {
             0: dice[0],
@@ -15,6 +17,7 @@ class Dice:
 
 
 class Board:
+    """Class representing the Monopoly board with helpful gameplay functions"""
     GO = 0
     MEDITIRANEAN_AVE = 1
     COMMUNITY_CHEST_1 = 2
@@ -103,13 +106,11 @@ class Board:
     bord_len = len(landings) - 1
 
     def advance(self, current_position, roll_value):
-        if roll_value > 12:
-            raise ValueError("You cannot roll a value > 12")
-        elif roll_value < 2:
-            raise ValueError("You cannot roll a value < 2")
+        """Calculate the players new position based on their dice roll"""
+        if not 2 <= roll_value <= 12:
+            raise ValueError(f"You cannot roll a value of {roll_value}. Only 2-12 are valid values.")
 
         passed_go = False
-
         next_position = current_position + roll_value
         if next_position > self.bord_len:
             passed_go = True
@@ -118,12 +119,14 @@ class Board:
         return (next_position, self.landings[next_position]), passed_go
 
     def next_utility(self, position):
+        """Return the next utility after the players current position"""
         if self.GO <= position <= self.ST_CHARLES_PLACE or self.MARVIN_GARDENS <= position <= self.BOARDWALK:
             return self.ELECTRIC_COMPANY
         elif self.ELECTRIC_COMPANY <= position <= self.VENTNOR_AVE:
             return self.WATER_WORKS
 
     def next_railroad(self, position):
+        """Return the next railroad after the players current position"""
         if self.GO <= position <= self.INCOME_TAX or self.CHANCE_3 <= position <= self.BOARDWALK:
             return self.READING_RAILROAD
         elif self.READING_RAILROAD <= position <= self.VIRGINIA_AVE:
@@ -134,7 +137,8 @@ class Board:
             return self.SHORTLINE
 
 
-class Player:
+class PlayerBase:
+    """Base Class for a Monopoly player"""
     position = (0, Board.landings[0])
     name = None
     dice = Dice()
@@ -145,48 +149,60 @@ class Player:
     def __init__(self, name):
         self.name = name
 
+
+class Game:
+    """Gameplay class handling player turns"""
+    players = []
+    board = Board()
+    current_player = None
+
     def _advance_position(self, roll_value):
-        self.position, passed_go = game.board.advance(self.position[0], roll_value)
+        """Advances a players position based on a spin of the dice"""
+        self.current_player.position, passed_go = game.board.advance(self.current_player.position[0], roll_value)
         return passed_go
 
     def _move_position(self, position_id, backwards_movement=False):
-        passed_go = True if self.position[0] > position_id and not backwards_movement or position_id == 0 else False
-        self.position = (position_id, game.board.landings[position_id])
+        """Changes a player to a new position specified"""
+        passed_go = True if self.current_player.position[0] > position_id \
+                            and not backwards_movement or position_id == 0 else False
+        self.current_player.position = (position_id, game.board.landings[position_id])
         return passed_go
 
     def _bank_collect(self, amount):
-        self.cash += amount
+        """Collects money from the Bank"""
+        self.current_player.cash += amount
         # TODO remove from bank
 
-    def _pay_pie(self, amount):
-        self.cash -= amount
-        # TODO Add to pie
+    def add_player(self, player):
+        """Adds a player to the game"""
+        self.players.append(player)
 
-    def turn(self):
-        print(f"Player {self.name} is on {self.position[1]}")
+    def run_turn(self):
+        """Runs the run_turn for the current player"""
+        print(f"Player {self.current_player.name} is on {self.current_player.position[1]}")
 
         # roll dice
-        roll = self.dice.roll()
-        print(f"Player {self.name} rolled a {roll['total']}")
+        roll = self.current_player.dice.roll()
+        print(f"Player {self.current_player.name} rolled {roll['total']}")
 
         # move players piece
         passed_go = self._advance_position(roll["total"])
-        print(f"Player {self.name} is now on {self.position[1]}")
+        print(f"Player {self.current_player.name} is now on {self.current_player.position[1]}")
 
         if passed_go:
             self._bank_collect(200)
 
         # take action based on where the player landed
-        position_id, position = self.position
+        position_id, position = self.current_player.position
 
         if isinstance(position, landings.Chance):
-            # Player landed on Chance, pick a card and act on its instructions
+            # PlayerBase landed on Chance, pick a card and act on its instructions
             card_id, card_text = position.select_card()
 
             if card_id == landings.Chance.ADVANCE_TO_GO:
                 self._move_position(Board.GO)
                 self._bank_collect(200)
-                print(f"Player {self.name} has been moved to {self.position[1]} and got $200")
+                print(f"Player {self.current_player.name} has been moved to {self.current_player.position[1]} and got $200")
 
             elif card_id == landings.Chance.ADVANCE_TO_ILLINOIS:
                 passed_go = self._move_position(Board.ILLINOIS_AVE)
@@ -214,17 +230,17 @@ class Player:
                 self._bank_collect(50)
 
             elif card_id == landings.Chance.GET_OUT_OF_JAIL_FREE:
-                self.get_out_of_jail_free_cards += 1
+                self.current_player.get_out_of_jail_free_cards += 1
 
             elif card_id == landings.Chance.GO_BACK_THREE:
                 go_back_to = position_id - 3 if position_id >= 3 else \
                     49 if position_id == 2 else \
-                    48 if position_id == 1 else 47
+                        48 if position_id == 1 else 47
                 self._move_position(go_back_to, backwards_movement=True)
 
             elif card_id == landings.Chance.GO_TO_JAIL:
-                self.position = 10, self._move_position(Board.JAIL)
-                self.in_jail = True
+                self.current_player.position = 10, self._move_position(Board.JAIL)
+                self.current_player.in_jail = True
                 # TODO write Jail code
 
             elif card_id == landings.Chance.GENERAL_REPAIRS:
@@ -232,7 +248,7 @@ class Player:
                 # TODO write code to remove value from user based on houses/hotels
 
             elif card_id == landings.Chance.POOR_TAX:
-                self._pay_pie(15)
+                self._bank_collect(15)
 
             elif card_id == landings.Chance.TRIP_TO_READING_RAILROAD:
                 passed_go = self._move_position(Board.READING_RAILROAD)
@@ -253,13 +269,13 @@ class Player:
                 self._bank_collect(100)
 
         elif isinstance(position, landings.CommunityChest):
-            # Player landed on Community Chest, pick a card and act on its instructions
+            # PlayerBase landed on Community Chest, pick a card and act on its instructions
             card_id, card_text = position.select_card()
 
             if card_id == landings.CommunityChest.ADVANCE_TO_GO:
                 self._move_position(Board.GO)
                 self._bank_collect(200)
-                print(f"Player {self.name} has been moved to {self.position[1]} and got $200")
+                print(f"Player {self.current_player.name} has been moved to {self.current_player.position[1]} and got $200")
 
             elif card_id == landings.CommunityChest.BANK_ERROR:
                 pass
@@ -288,53 +304,46 @@ class Player:
             elif card_id == landings.CommunityChest.BIRTHDAY:
                 pass
 
-            elif card_id == landings.CommunityChest.LIFE_INSURANCE :
+            elif card_id == landings.CommunityChest.LIFE_INSURANCE:
                 pass
 
-            elif card_id == landings.CommunityChest.HOSPITAL_FEES :
+            elif card_id == landings.CommunityChest.HOSPITAL_FEES:
                 pass
 
-            elif card_id == landings.CommunityChest.SCHOOL_FEES :
+            elif card_id == landings.CommunityChest.SCHOOL_FEES:
                 pass
 
-            elif card_id == landings.CommunityChest.CONSULT :
+            elif card_id == landings.CommunityChest.CONSULT:
                 pass
 
-            elif card_id == landings.CommunityChest.STREET_REPAIRS :
+            elif card_id == landings.CommunityChest.STREET_REPAIRS:
                 pass
 
-            elif card_id == landings.CommunityChest.BEAUTY_CONTEST :
+            elif card_id == landings.CommunityChest.BEAUTY_CONTEST:
                 pass
 
-            elif card_id == landings.CommunityChest.INHERITANCE :
+            elif card_id == landings.CommunityChest.INHERITANCE:
                 pass
-
-
 
         # take actions
         if passed_go:
-            print(f"Player {self.name} passed Go!!!")
-
-
-class Game:
-    players = []
-    board = Board()
-
-    def add_player(self, player):
-        self.players.append(player)
+            print(f"Player {self.current_player.name} passed Go!!!")
 
     def play(self):
+        """Runs the Monopoly game"""
         first_round = True
         while first_round or input("\tDo you want to take another round? ").lower() in ["yes", "y", ""]:
             first_round = False
 
             for player in self.players:
-                player.turn()
+                self.current_player = player
+                # player.run_turn()
+                self.run_turn()
 
 
 if __name__ == '__main__':
     game = Game()
-    game.add_player(Player("Avi"))
-    game.add_player(Player("Avrohom"))
+    game.add_player(PlayerBase("Avi"))
+    game.add_player(PlayerBase("Avrohom"))
 
     game.play()

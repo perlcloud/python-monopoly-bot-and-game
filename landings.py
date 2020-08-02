@@ -2,49 +2,86 @@ import random
 
 
 class LandingsBase:
+    """Base class for a Monopoly Board Position"""
     name = None
     is_utility = False
     is_railroad = False
-
-    def event(self):
-        print("pass")
 
     def __str__(self):
         return f"<{self.name}>"
 
 
 class CardBase(LandingsBase):
+    """Base class for Monopoly card sets"""
     name = None
     cards = []
 
     def __init__(self, scramble=True):
         if scramble:
+            # We don't scramble cards when we reload an old game.
             self.cards = sorted(self.cards, key=lambda x: random.random())
 
-    def get_top_card(self):
+    def _get_top_card(self):
+        """Returns the card on top of the pile"""
         return self.cards.pop()
 
-    def place_card_at_bottom(self, card):
+    def _place_card_at_bottom(self, card):
+        """Place a card at the bottom of the pile"""
         self.cards.insert(0, card)
 
     def select_card(self):
-        card = self.get_top_card()
+        """Selects a card, placing the card at the bottom of the pile if the player does no keep the card"""
+        card = self._get_top_card()
         print(f"Chance card selected: {card}")
 
         if not card[0] == self.GET_OUT_OF_JAIL_FREE:
-            self.place_card_at_bottom(card)
+            self._place_card_at_bottom(card)
+
         return card
 
 
-class Go(LandingsBase):
-    name = "Go"
+class Chance(CardBase):
+    """Class representing the Chance set of cards"""
+    ADVANCE_TO_GO = 0
+    ADVANCE_TO_ILLINOIS = 1
+    ADVANCE_TO_ST_CHARLES_PLACE = 2
+    ADVANCE_TO_NEAREST_UTILITY = 3
+    ADVANCE_TO_NEAREST_RAILROAD = 4
+    BANKS_PAYS_DIVIDEND = 5
+    GET_OUT_OF_JAIL_FREE = 6
+    GO_BACK_THREE = 7
+    GO_TO_JAIL = 8
+    GENERAL_REPAIRS = 9
+    POOR_TAX = 10
+    TRIP_TO_READING_RAILROAD = 11
+    TRIP_TO_BOARDWALK = 12
+    CHAIRMAN_OF_THE_BOARD = 13
+    BUILDING_LOAN_LOAN = 14
+    WON_CROSSWORD_COMPETITION = 15
 
-
-class MediterRaneanAvenue(LandingsBase):
-    name = "Mediter-Ranean Avenue"
+    name = "Chance"
+    cards = [
+        (ADVANCE_TO_GO, 'Advance to "Go". (Collect $200).'),
+        (ADVANCE_TO_ILLINOIS, "Advance to Illinois Ave. If you pass Go, collect $200."),
+        (ADVANCE_TO_ST_CHARLES_PLACE, "Advance to St. Charles Place. If you pass Go, collect $200."),
+        (ADVANCE_TO_NEAREST_UTILITY, "Advance token to nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total 10 times the amount thrown."),
+        (ADVANCE_TO_NEAREST_RAILROAD, "Advance token to the nearest Railroad and pay owner twice the rental to which he/she is otherwise entitled. If Railroad is unowned, you may buy it from the Bank."),
+        (BANKS_PAYS_DIVIDEND, "Bank pays you dividend of $50."),
+        (GET_OUT_OF_JAIL_FREE, "Get out of Jail Free. This card may be kept until needed, or traded/sold."),
+        (GO_BACK_THREE, "Go Back Three Spaces."),
+        (GO_TO_JAIL, "Go to Jail. Go directly to Jail. Do not pass GO, do not collect $200."),
+        (GENERAL_REPAIRS, "Make general repairs on all your property: For each house pay $25, For each hotel pay $100."),
+        (POOR_TAX, "Pay poor tax of $15"),
+        (TRIP_TO_READING_RAILROAD, "Take a trip to Reading Railroad. If you pass Go, collect $200."),
+        (TRIP_TO_BOARDWALK, "Take a walk on the Boardwalk. Advance token to Boardwalk."),
+        (CHAIRMAN_OF_THE_BOARD, "You have been elected Chairman of the Board. Pay each player $50."),
+        (BUILDING_LOAN_LOAN, "Your building loan matures. Receive $150."),
+        (WON_CROSSWORD_COMPETITION, "You have won a crossword competition. Collect $100."),
+    ]
 
 
 class CommunityChest(CardBase):
+    """Class representing the Community Chest set of cards"""
     ADVANCE_TO_GO = 0
     BANK_ERROR = 1
     DOCTOR_FEE = 2
@@ -86,6 +123,14 @@ class CommunityChest(CardBase):
     ]
 
 
+class Go(LandingsBase):
+    name = "Go"
+
+
+class MediterRaneanAvenue(LandingsBase):
+    name = "Mediter-Ranean Avenue"
+
+
 class BalticAvenue(LandingsBase):
     name = "Baltic Avenue"
 
@@ -101,45 +146,6 @@ class ReadingRailroad(LandingsBase):
 
 class OrientalAvenue(LandingsBase):
     name = "Oriental Avenue"
-
-
-class Chance(CardBase):
-    ADVANCE_TO_GO = 0
-    ADVANCE_TO_ILLINOIS = 1
-    ADVANCE_TO_ST_CHARLES_PLACE = 2
-    ADVANCE_TO_NEAREST_UTILITY = 3
-    ADVANCE_TO_NEAREST_RAILROAD = 4
-    BANKS_PAYS_DIVIDEND = 5
-    GET_OUT_OF_JAIL_FREE = 6
-    GO_BACK_THREE = 7
-    GO_TO_JAIL = 8
-    GENERAL_REPAIRS = 9
-    POOR_TAX = 10
-    TRIP_TO_READING_RAILROAD = 11
-    TRIP_TO_BOARDWALK = 12
-    CHAIRMAN_OF_THE_BOARD = 13
-    BUILDING_LOAN_LOAN = 14
-    WON_CROSSWORD_COMPETITION = 15
-
-    name = "Chance"
-    cards = [
-        (ADVANCE_TO_GO, 'Advance to "Go". (Collect $200).'),
-        (ADVANCE_TO_ILLINOIS, "Advance to Illinois Ave. If you pass Go, collect $200."),
-        (ADVANCE_TO_ST_CHARLES_PLACE, "Advance to St. Charles Place. If you pass Go, collect $200."),
-        (ADVANCE_TO_NEAREST_UTILITY, "Advance token to nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total 10 times the amount thrown."),
-        (ADVANCE_TO_NEAREST_RAILROAD, "Advance token to the nearest Railroad and pay owner twice the rental to which he/she is otherwise entitled. If Railroad is unowned, you may buy it from the Bank."),
-        (BANKS_PAYS_DIVIDEND, "Bank pays you dividend of $50."),
-        (GET_OUT_OF_JAIL_FREE, "Get out of Jail Free. This card may be kept until needed, or traded/sold."),
-        (GO_BACK_THREE, "Go Back Three Spaces."),
-        (GO_TO_JAIL, "Go to Jail. Go directly to Jail. Do not pass GO, do not collect $200."),
-        (GENERAL_REPAIRS, "Make general repairs on all your property: For each house pay $25, For each hotel pay $100."),
-        (POOR_TAX, "Pay poor tax of $15"),
-        (TRIP_TO_READING_RAILROAD, "Take a trip to Reading Railroad. If you pass Go, collect $200."),
-        (TRIP_TO_BOARDWALK, "Take a walk on the Boardwalk. Advance token to Boardwalk."),
-        (CHAIRMAN_OF_THE_BOARD, "You have been elected Chairman of the Board. Pay each player $50."),
-        (BUILDING_LOAN_LOAN, "Your building loan matures. Receive $150."),
-        (WON_CROSSWORD_COMPETITION, "You have won a crossword competition. Collect $100."),
-    ]
 
 
 class VermontAvenue(LandingsBase):
@@ -257,4 +263,3 @@ class LuxuryTax(LandingsBase):
 
 class Boardwalk(LandingsBase):
     name = "Boardwalk"
-
