@@ -152,12 +152,29 @@ class PlayerBase:
     position = (0, Board.landings[0])
     name = None
     dice = Dice()
-    cash = 1500
-    get_out_of_jail_free_cards = 0
+    cash = None
     in_jail = False
+    get_out_of_jail_free_cards = 0
 
-    def __init__(self, name):
+    def __init__(self, name, game):
         self.name = name
+        self.cash = game.bank.withdraw(1500)
+
+
+class Bank:
+    """Bank object for tracking cash-flow, houses, and hotels"""
+
+    def __init__(self):
+        self.cash = 20580
+
+    def withdraw(self, amount):
+        """Withdraw money from the bank"""
+        self.cash -= amount
+        return amount
+
+    def deposit(self, amount):
+        """Deposit money in the bank"""
+        self.cash += amount
 
 
 class Game:
@@ -165,11 +182,12 @@ class Game:
 
     players = []
     board = Board()
+    bank = Bank()
     current_player = None
 
     def _advance_position(self, roll_value):
         """Advances a players position based on a spin of the dice"""
-        self.current_player.position, passed_go = game.board.advance(
+        self.current_player.position, passed_go = self.board.advance(
             self.current_player.position[0], roll_value
         )
         return passed_go
@@ -183,17 +201,17 @@ class Game:
             or position_id == 0
             else False
         )
-        self.current_player.position = (position_id, game.board.landings[position_id])
+        self.current_player.position = (position_id, self.board.landings[position_id])
         return passed_go
 
     def _bank_collect(self, amount):
         """Collects money from the Bank"""
+        self.bank.withdraw(amount)
         self.current_player.cash += amount
-        # TODO remove from bank
 
-    def add_player(self, player):
+    def add_player(self, name, player_obj):
         """Adds a player to the game"""
-        self.players.append(player)
+        self.players.append(player_obj(name, self))
 
     def run_turn(self):
         """Runs the run_turn for the current player"""
@@ -379,7 +397,7 @@ class Game:
 
 if __name__ == "__main__":
     game = Game()
-    game.add_player(PlayerBase("Avi"))
-    game.add_player(PlayerBase("Avrohom"))
+    game.add_player("Avi", PlayerBase)
+    game.add_player("Sara", PlayerBase)
 
     game.play()

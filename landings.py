@@ -3,6 +3,7 @@ import random
 
 class LandingsBase:
     """Base class for a Monopoly Board Position"""
+
     name = None
     is_utility = False
     is_railroad = False
@@ -13,6 +14,7 @@ class LandingsBase:
 
 class CardBase(LandingsBase):
     """Base class for Monopoly card sets"""
+
     name = None
     cards = []
 
@@ -42,6 +44,7 @@ class CardBase(LandingsBase):
 
 class Chance(CardBase):
     """Class representing the Chance set of cards"""
+
     ADVANCE_TO_GO = 0
     ADVANCE_TO_ILLINOIS = 1
     ADVANCE_TO_ST_CHARLES_PLACE = 2
@@ -63,25 +66,58 @@ class Chance(CardBase):
     cards = [
         (ADVANCE_TO_GO, 'Advance to "Go". (Collect $200).'),
         (ADVANCE_TO_ILLINOIS, "Advance to Illinois Ave. If you pass Go, collect $200."),
-        (ADVANCE_TO_ST_CHARLES_PLACE, "Advance to St. Charles Place. If you pass Go, collect $200."),
-        (ADVANCE_TO_NEAREST_UTILITY, "Advance token to nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total 10 times the amount thrown."),
-        (ADVANCE_TO_NEAREST_RAILROAD, "Advance token to the nearest Railroad and pay owner twice the rental to which he/she is otherwise entitled. If Railroad is unowned, you may buy it from the Bank."),
+        (
+            ADVANCE_TO_ST_CHARLES_PLACE,
+            "Advance to St. Charles Place. If you pass Go, collect $200.",
+        ),
+        (
+            ADVANCE_TO_NEAREST_UTILITY,
+            "Advance token to nearest Utility. If unowned, you may buy it from the Bank. "
+            "If owned, throw dice and pay owner a total 10 times the amount thrown.",
+        ),
+        (
+            ADVANCE_TO_NEAREST_RAILROAD,
+            "Advance token to the nearest Railroad and pay owner twice the rental to which "
+            "he/she is otherwise entitled. If Railroad is unowned, you may buy it from the Bank.",
+        ),
         (BANKS_PAYS_DIVIDEND, "Bank pays you dividend of $50."),
-        (GET_OUT_OF_JAIL_FREE, "Get out of Jail Free. This card may be kept until needed, or traded/sold."),
+        (
+            GET_OUT_OF_JAIL_FREE,
+            "Get out of Jail Free. This card may be kept until needed, or traded/sold.",
+        ),
         (GO_BACK_THREE, "Go Back Three Spaces."),
-        (GO_TO_JAIL, "Go to Jail. Go directly to Jail. Do not pass GO, do not collect $200."),
-        (GENERAL_REPAIRS, "Make general repairs on all your property: For each house pay $25, For each hotel pay $100."),
+        (
+            GO_TO_JAIL,
+            "Go to Jail. Go directly to Jail. Do not pass GO, do not collect $200.",
+        ),
+        (
+            GENERAL_REPAIRS,
+            "Make general repairs on all your property: For each house pay $25, For each hotel pay $100.",
+        ),
         (POOR_TAX, "Pay poor tax of $15"),
-        (TRIP_TO_READING_RAILROAD, "Take a trip to Reading Railroad. If you pass Go, collect $200."),
-        (TRIP_TO_BOARDWALK, "Take a walk on the Boardwalk. Advance token to Boardwalk."),
-        (CHAIRMAN_OF_THE_BOARD, "You have been elected Chairman of the Board. Pay each player $50."),
+        (
+            TRIP_TO_READING_RAILROAD,
+            "Take a trip to Reading Railroad. If you pass Go, collect $200.",
+        ),
+        (
+            TRIP_TO_BOARDWALK,
+            "Take a walk on the Boardwalk. Advance token to Boardwalk.",
+        ),
+        (
+            CHAIRMAN_OF_THE_BOARD,
+            "You have been elected Chairman of the Board. Pay each player $50.",
+        ),
         (BUILDING_LOAN_LOAN, "Your building loan matures. Receive $150."),
-        (WON_CROSSWORD_COMPETITION, "You have won a crossword competition. Collect $100."),
+        (
+            WON_CROSSWORD_COMPETITION,
+            "You have won a crossword competition. Collect $100.",
+        ),
     ]
 
 
 class CommunityChest(CardBase):
     """Class representing the Community Chest set of cards"""
+
     ADVANCE_TO_GO = 0
     BANK_ERROR = 1
     DOCTOR_FEE = 2
@@ -108,7 +144,10 @@ class CommunityChest(CardBase):
         (STOCK_SALE, "From sale of stock you get $50."),
         (GET_OUT_OF_JAIL_FREE, "Get Out of Jail Free."),
         (GO_TO_JAIL, "Go to Jail."),
-        (OPERA_NIGHT, "Grand Opera Night. Collect $50 from every player for opening night seats."),
+        (
+            OPERA_NIGHT,
+            "Grand Opera Night. Collect $50 from every player for opening night seats.",
+        ),
         (HOLIDAY_FUND, "Holiday {Xmas} Fund matures. Receive {Collect} $100."),
         (TAX_REFUND, "Income tax refund. Collect $20."),
         (BIRTHDAY, "It is your birthday. Collect $10 from every player."),
@@ -116,10 +155,12 @@ class CommunityChest(CardBase):
         (HOSPITAL_FEES, "Hospital Fees. Pay $50."),
         (SCHOOL_FEES, "School fees. Pay $50."),
         (CONSULT, "Receive $25 consultancy fee."),
-        (STREET_REPAIRS, "You are assessed for street repairs: Pay $40 per house and $115 per hotel you own."),
+        (
+            STREET_REPAIRS,
+            "You are assessed for street repairs: Pay $40 per house and $115 per hotel you own.",
+        ),
         (BEAUTY_CONTEST, "You have won second prize in a beauty contest. Collect $10."),
         (INHERITANCE, "You inherit $100."),
-
     ]
 
 
