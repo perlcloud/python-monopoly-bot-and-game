@@ -198,3 +198,81 @@ def test_bank_deposit():
     game.bank.deposit(50)
 
     assert bank_cash_old == game.bank.cash - 50
+
+
+def test_chance_scramble():
+    """Verify the order of the cards is different on loading when scramble == True"""
+    chance1 = landings.Chance(scramble=True)
+    chance2 = landings.Chance(scramble=True)
+
+    assert chance1.cards != chance2.cards
+
+
+def test_chance_select_and_place_card():
+    """Verify the card selected is placed at the bottom"""
+    chance = landings.Chance()
+    second_to_last_card = chance.cards[0]
+
+    # Find a non "Get out of jail free" card for the test
+    # "Get out of jail free" cards are not placed back into the stack
+    selected_card = chance.select_card()
+    while selected_card[0] == chance.GET_OUT_OF_JAIL_FREE:
+        selected_card = chance.select_card()
+
+    last_card = chance.cards[0]  # Manually get the card at the bottom of the stack
+    assert last_card == selected_card
+    assert second_to_last_card != selected_card
+
+
+def test_chance_select_and_keep_card():
+    """Verify the card selected is not placed at the bottom"""
+    chance = landings.Chance()
+
+    # Find a "Get out of jail free" card for the test
+    # "Get out of jail free" cards are not placed back into the stack
+    selected_card = chance.select_card()
+    while selected_card[0] != chance.GET_OUT_OF_JAIL_FREE:
+        selected_card = chance.select_card()
+
+    last_card = chance.cards[0]  # Manually get the card at the bottom of the stack
+    assert last_card != selected_card
+
+
+def test_community_chest_scramble():
+    """Verify the order of the cards is different on loading when scramble == True"""
+    community_chest1 = landings.Chance(scramble=True)
+    community_chest2 = landings.Chance(scramble=True)
+
+    assert community_chest1.cards != community_chest2.cards
+
+
+def test_community_chest_select_and_place_card():
+    """Verify the card selected is placed at the bottom"""
+    community_chest = landings.CommunityChest()
+    second_to_last_card = community_chest.cards[0]
+
+    # Find a non "Get out of jail free" card for the test
+    # "Get out of jail free" cards are not placed back into the stack
+    selected_card = community_chest.select_card()
+    while selected_card[0] == community_chest.GET_OUT_OF_JAIL_FREE:
+        selected_card = community_chest.select_card()
+
+    last_card = community_chest.cards[0]  # Manually get the card at the bottom of the stack
+    assert last_card == selected_card
+    assert second_to_last_card != selected_card
+
+
+def test_community_chest_select_and_keep_card():
+    """Verify the card selected is not placed at the bottom"""
+    community_chest = landings.Chance()
+
+    # Find a "Get out of jail free" card for the test
+    # "Get out of jail free" cards are not placed back into the stack
+    selected_card = community_chest.select_card()
+    while selected_card[0] != community_chest.GET_OUT_OF_JAIL_FREE:
+        selected_card = community_chest.select_card()
+
+    last_card = community_chest.cards[0]  # Manually get the card at the bottom of the stack
+    assert last_card != selected_card
+
+
