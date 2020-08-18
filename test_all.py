@@ -421,3 +421,106 @@ def test_player_withdraw_fail():
 
     assert returned_amount is None
     assert cash == game.current_player.cash
+
+
+def test_game_turn_leave_jail_card_success():
+    """
+    Verify the behavior of leaving jail with a get out of jail free card
+    when the player has a get out of jail free card
+    """
+    game = main.Game()
+    game.add_player("TestPlayer1", main.DefaultPlayer)
+    game.current_player = game.players[0]
+
+    # Give player a get out of jail free card
+    chance_jail_card = [
+        c
+        for c in game.board.chance.cards
+        if c.id == game.board.chance.GET_OUT_OF_JAIL_FREE
+    ][0]
+    chance_jail_card.owner = game.current_player
+
+    # Set player state
+    game.current_player.in_jail = True
+    continue_turn = game._leave_jail(game.board.LEAVE_JAIL_USE_CARD)
+
+    assert continue_turn is True
+    assert chance_jail_card.owner is None
+    assert len(game.current_player.get_out_of_jail_free_cards) == 0
+    assert game.current_player.in_jail is False
+
+
+def test_game_turn_leave_jail_card_error():
+    """
+    Verify the behavior of leaving jail with a get out of jail free card
+    when the player does NOT have a get out of jail free card
+    """
+    game = main.Game()
+    game.add_player("TestPlayer1", main.DefaultPlayer)
+    game.current_player = game.players[0]
+
+    # Set player state
+    with pytest.raises(ValueError):
+        game.current_player.in_jail = True
+        game._leave_jail(game.board.LEAVE_JAIL_USE_CARD)
+
+
+def test_game_turn_leave_jail_pay():
+    """
+    Verify the behavior of leaving jail with a get out of jail free card
+    when the player has a get out of jail free card
+    """
+    game = main.Game()
+    game.add_player("TestPlayer1", main.DefaultPlayer)
+    game.current_player = game.players[0]
+
+    # Set player state
+    game.current_player.in_jail = True
+    previous_cash_on_hand = game.current_player.cash
+    previous_bank_cash_on_hand = game.bank.cash
+    continue_turn = game._leave_jail(game.board.LEAVE_JAIL_PAY)
+
+    assert continue_turn is True
+    assert game.current_player.cash == previous_cash_on_hand - 50
+    assert game.bank.cash == previous_bank_cash_on_hand + 50
+    assert game.current_player.in_jail is False
+
+
+@mock.patch("main.random.randint")
+def test_game_turn_leave_jail_roll_double(mock_randint):
+    """
+    Verify the behavior of leaving jail with a dice roll that is a double
+    """
+    mock_randint.side_effect = [5, 5]
+
+    game = main.Game()
+    game.add_player("TestPlayer1", main.DefaultPlayer)
+    game.current_player = game.players[0]
+
+    # Set player state
+    game.current_player.in_jail = True
+    continue_turn = game._leave_jail(game.board.LEAVE_JAIL_ROLL)
+
+    assert continue_turn is True
+    assert game.current_player.dice.jail_roll_count == 0
+    assert game.current_player.in_jail is False
+
+
+@mock.patch("main.random.randint")
+def test_game_turn_leave_jail_roll_non_double(mock_randint):
+    """
+    Verify the behavior of leaving jail with a dice roll that is a double
+    """
+    mock_randint.side_effect = [5, 6]
+
+    game = main.Game()
+    game.add_player("TestPlayer1", main.DefaultPlayer)
+    game.current_player = game.players[0]
+
+    # Set player state
+    game.current_player.in_jail = True
+    continue_turn = game._leave_jail(game.board.LEAVE_JAIL_ROLL)
+
+    assert continue_turn is False
+    assert game.current_player.dice.jail_roll_count == 1
+    assert game.current_player.in_jail is True

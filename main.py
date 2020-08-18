@@ -349,6 +349,52 @@ class Game:
         """Adds a player to the game"""
         self.players.append(player_obj(name, self))
 
+    def _leave_jail(self, selected_option):
+        log(f"Player chooses to exit Jail with the option: '{selected_option}'")
+
+        if selected_option == self.board.LEAVE_JAIL_USE_CARD:
+            if len(self.current_player.get_out_of_jail_free_cards) > 0:
+                card = self.current_player.get_out_of_jail_free_cards.pop()
+                if card.deck_code_name == "community_chest":
+                    self.board.community_chest.place_card_at_bottom(card)
+                if card.deck_code_name == "chance":
+                    self.board.chance.place_card_at_bottom(card)
+                self.current_player.in_jail = False
+                log(
+                    f"Player used a 'Get out of Jail free' card"
+                    f" - {len(self.current_player.get_out_of_jail_free_cards)} cards remaining"
+                )
+            else:
+                raise ValueError(
+                    "You cannot choose to use a card you don't have, cheater!"
+                )
+
+        elif selected_option == self.board.LEAVE_JAIL_PAY:
+            cash = self.current_player.withdraw(50)
+            self.bank.deposit(cash)
+            self.current_player.in_jail = False
+
+        elif selected_option == self.board.LEAVE_JAIL_ROLL:
+            dice = self.current_player.dice
+            dice.roll()
+            if not dice.same:
+                # The player did not roll a double and remains in jail
+                dice.jail_roll_count += 1
+                if dice.jail_roll_count == 3:
+                    # If this is the 3rd try at rolling a double, player is forced to pay $50 and use the roll
+                    log(
+                        "This was your 3rd roll attempt to leave Jail via rolling, you must now pay $50 and move on"
+                    )
+                    cash = self.current_player.withdraw(50)
+                    self.bank.deposit(cash)
+                    self.current_player.in_jail = False
+                else:
+                    return False
+            else:
+                self.current_player.in_jail = False
+
+        return True
+
     def run_turn(self):
         """Runs the run_turn for the current player"""
         # TODO split out this code and write tests for all of it
@@ -360,49 +406,10 @@ class Game:
             log(f"Player is in Jail")
 
             # Player must now choose between paying $50, using a get out of jail free card, or trying to roll a double
-            selected_option = self.current_player.leave_jail_option()
-            log(f"Player chooses to exit Jail with the option: '{selected_option}'")
-
-            if selected_option == self.board.LEAVE_JAIL_USE_CARD:
-                if len(self.current_player.get_out_of_jail_free_cards) > 0:
-                    card = self.current_player.get_out_of_jail_free_cards.pop()
-                    if card.deck_code_name == "community_chest":
-                        self.board.community_chest.place_card_at_bottom(card)
-                    if card.deck_code_name == "chance":
-                        self.board.chance.place_card_at_bottom(card)
-                    self.current_player.in_jail = False
-                    log(
-                        f"Player used a 'Get out of Jail free' card"
-                        f" - {len(self.current_player.get_out_of_jail_free_cards)} cards remaining"
-                    )
-                else:
-                    raise ValueError(
-                        "You cannot choose to use a card you don't have, cheater!"
-                    )
-            elif selected_option == self.board.LEAVE_JAIL_PAY:
-                cash = self.current_player.withdraw(50)
-                self.bank.deposit(cash)
-                self.current_player.in_jail = False
-            elif selected_option == self.board.LEAVE_JAIL_ROLL:
-                dice = self.current_player.dice
-                dice.roll()
-                if not dice.same:
-                    # The player did not roll a double and remains in jail
-                    dice.jail_roll_count += 1
-                    if dice.jail_roll_count == 3:
-                        # If this is the 3rd try at rolling a double, player is forced to pay $50 and use the roll
-                        log(
-                            "This was your 3rd roll attempt to leave Jail, you must now pay $50 and move on"
-                        )
-                        cash = self.current_player.withdraw(50)
-                        self.bank.deposit(cash)
-                        dice.jail_roll_count = 0
-                        self.current_player.in_jail = False
-                    else:
-                        return
-                else:
-                    dice.jail_roll_count = 0
-                    self.current_player.in_jail = False
+            leave_jail_option = self.current_player.leave_jail_option()
+            if not self._leave_jail(leave_jail_option):
+                # Player remains in jail and ends turn
+                return
 
         # roll dice
         if not self.current_player.dice.active:
