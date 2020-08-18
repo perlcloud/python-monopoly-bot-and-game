@@ -1,9 +1,12 @@
+import uuid
 import random
 import landings
 
 
 class Dice:
     """Dice class for executing and tracking a players rolls"""
+
+    jail_roll_count = 0  # Number of times player has attempted to roll a double to leave jail
 
     def roll(self):
         """Roll 2 Dice"""
@@ -106,6 +109,18 @@ class Board:
     }
     bord_len = len(landings) - 1
 
+    # Landings for which no action is needed on landing
+    NO_ACTION = [
+        GO,
+        JAIL,
+        FREE_PARKING,
+    ]
+
+    # Options for ways to leave jail
+    LEAVE_JAIL_USE_CARD = "card"
+    LEAVE_JAIL_PAY = "pay"
+    LEAVE_JAIL_ROLL = "roll"
+
     def advance(self, current_position, roll_value):
         """Calculate the players new position based on their dice roll"""
         if not 2 <= roll_value <= 12:
@@ -145,20 +160,66 @@ class Board:
         elif self.BO_RAILROAD <= position <= self.PENNSYLVANIA_AVE:
             return self.SHORTLINE
 
+    def get_cards_by_owner(self, player):
+        chance_cards = [c for c in self.chance.cards if c.owner and c.owner.id == player.id]
+        community_chest_cards = [c for c in self.community_chest.cards if c.owner and c.owner.id == player.id]
+        return chance_cards + community_chest_cards
+
 
 class PlayerBase:
     """Base Class for a Monopoly player"""
 
+    id = None
     position = (0, Board.landings[0])
     name = None
     dice = Dice()
     cash = None
     in_jail = False
-    get_out_of_jail_free_cards = 0
 
     def __init__(self, name, game):
+        self.id = uuid.uuid4()
         self.name = name
-        self.cash = game.bank.withdraw(1500)
+        self.game = game
+        self.cash = self.game.bank.withdraw(1500)
+
+    @property
+    def get_out_of_jail_free_cards(self):
+        cards = self.game.board.get_cards_by_owner(self)
+        cards = [
+            c for c in cards
+            if c.deck_code_name == "community_chest"
+               and c.id == landings.CommunityChest.GET_OUT_OF_JAIL_FREE
+            or c.deck_code_name == "chance"
+               and c.id == landings.Chance.GET_OUT_OF_JAIL_FREE
+        ]
+        return cards
+
+    def leave_jail_option(self):
+        """Extend this method to return one of the 3 LEAVE_JAIL_OPTIONS to choose how you want to leave jail"""
+        raise NotImplementedError
+
+    def withdraw(self, amount):
+        """
+        Attempt to withdraw money from the users cash
+        Returns None if the player does not have the cash on hand
+        """
+        value = amount if amount <= self.cash else None
+        if value:
+            self.cash -= amount
+
+        return value
+
+
+class DefaultPlayer(PlayerBase):
+    """Default implementation of a monopoly player, making obvious choices"""
+
+    def leave_jail_option(self):
+        if len(self.get_out_of_jail_free_cards) > 0:
+            return game.board.LEAVE_JAIL_USE_CARD
+        elif self.cash >= 1000:
+            return game.board.LEAVE_JAIL_PAY
+        else:
+            return game.board.LEAVE_JAIL_ROLL
 
 
 class Bank:
@@ -215,12 +276,53 @@ class Game:
 
     def run_turn(self):
         """Runs the run_turn for the current player"""
+        # TODO split out this code and write tests for all of it
+
         print(
             f"Player {self.current_player.name} is on {self.current_player.position[1]}"
         )
 
+        roll = None
+
+        # If the player is in jail, attempt to leave
+        if self.current_player.in_jail:
+            # Player must now choose between paying $50, using a get out of jail free card, or trying to roll a double
+            print(f"Player {self.current_player.name} is in Jail")
+            selected_option = self.current_player.leave_jail_option()
+
+            if selected_option == self.board.LEAVE_JAIL_USE_CARD:
+                if len(self.current_player.get_out_of_jail_free_cards) > 0:
+                    card = self.current_player.get_out_of_jail_free_cards.pop()
+                    if card.deck_code_name == "community_chest":
+                        self.board.community_chest.place_card_at_bottom(card)
+                    if card.deck_code_name == "chance":
+                        self.board.chance.place_card_at_bottom(card)
+                    self.current_player.in_jail = False
+                else:
+                    raise ValueError("You cannot choose to use a card you don't have, cheater!")
+            elif selected_option == self.board.LEAVE_JAIL_PAY:
+                cash = self.current_player.withdraw(50)
+                self.bank.deposit(cash)
+                self.current_player.in_jail = False
+            elif selected_option == self.board.LEAVE_JAIL_ROLL:
+                roll = self.current_player.dice.roll()
+                if not roll["same"]:
+                    # The player did not roll a double and remains in jail
+                    self.current_player.dice.jail_roll_count += 1
+                    if self.current_player.dice.jail_roll_count == 3:
+                        # If this is the 3rd try at rolling a double, player is forced to pay $50 and use the roll
+                        cash = self.current_player.withdraw(50)
+                        self.bank.deposit(cash)
+                        self.current_player.dice.jail_roll_count = 0
+                        self.current_player.in_jail = False
+                    else:
+                        return
+                else:
+                    self.current_player.dice.jail_roll_count = 0
+                    self.current_player.in_jail = False
+
         # roll dice
-        roll = self.current_player.dice.roll()
+        roll = self.current_player.dice.roll() if not roll else roll
         print(f"Player {self.current_player.name} rolled {roll['total']}")
 
         # move players piece
@@ -237,44 +339,44 @@ class Game:
 
         if isinstance(position, landings.Chance):
             # PlayerBase landed on Chance, pick a card and act on its instructions
-            card_id, card_text = position.select_card()
+            card = position.select_card()
 
-            if card_id == landings.Chance.ADVANCE_TO_GO:
+            if card.id == landings.Chance.ADVANCE_TO_GO:
                 self._move_position(Board.GO)
                 self._bank_collect(200)
                 print(
                     f"Player {self.current_player.name} has been moved to {self.current_player.position[1]} and got $200"
                 )
 
-            elif card_id == landings.Chance.ADVANCE_TO_ILLINOIS:
+            elif card.id == landings.Chance.ADVANCE_TO_ILLINOIS:
                 passed_go = self._move_position(Board.ILLINOIS_AVE)
                 if passed_go:
                     self._bank_collect(200)
 
-            elif card_id == landings.Chance.ADVANCE_TO_ST_CHARLES_PLACE:
+            elif card.id == landings.Chance.ADVANCE_TO_ST_CHARLES_PLACE:
                 passed_go = self._move_position(Board.ST_CHARLES_PLACE)
                 if passed_go:
                     self._bank_collect(200)
 
-            elif card_id == landings.Chance.ADVANCE_TO_NEAREST_UTILITY:
+            elif card.id == landings.Chance.ADVANCE_TO_NEAREST_UTILITY:
                 nearest_utility = game.board.next_utility(position_id)
                 passed_go = self._move_position(nearest_utility)
                 if passed_go:
                     self._bank_collect(200)
 
-            elif card_id == landings.Chance.ADVANCE_TO_NEAREST_RAILROAD:
+            elif card.id == landings.Chance.ADVANCE_TO_NEAREST_RAILROAD:
                 nearest_railroad = game.board.next_railroad(position_id)
                 passed_go = self._move_position(nearest_railroad)
                 if passed_go:
                     self._bank_collect(200)
 
-            elif card_id == landings.Chance.BANKS_PAYS_DIVIDEND:
+            elif card.id == landings.Chance.BANKS_PAYS_DIVIDEND:
                 self._bank_collect(50)
 
-            elif card_id == landings.Chance.GET_OUT_OF_JAIL_FREE:
-                self.current_player.get_out_of_jail_free_cards += 1
+            elif card.id == landings.Chance.GET_OUT_OF_JAIL_FREE:
+                card.owner = self.current_player
 
-            elif card_id == landings.Chance.GO_BACK_THREE:
+            elif card.id == landings.Chance.GO_BACK_THREE:
                 go_back_to = (
                     position_id - 3
                     if position_id >= 3
@@ -286,98 +388,103 @@ class Game:
                 )
                 self._move_position(go_back_to, backwards_movement=True)
 
-            elif card_id == landings.Chance.GO_TO_JAIL:
+            elif card.id == landings.Chance.GO_TO_JAIL:
                 self.current_player.position = 10, self._move_position(Board.JAIL)
                 self.current_player.in_jail = True
                 # TODO write Jail code
 
-            elif card_id == landings.Chance.GENERAL_REPAIRS:
+            elif card.id == landings.Chance.GENERAL_REPAIRS:
                 pass
                 # TODO write code to remove value from user based on houses/hotels
 
-            elif card_id == landings.Chance.POOR_TAX:
+            elif card.id == landings.Chance.POOR_TAX:
                 self._bank_collect(15)
 
-            elif card_id == landings.Chance.TRIP_TO_READING_RAILROAD:
+            elif card.id == landings.Chance.TRIP_TO_READING_RAILROAD:
                 passed_go = self._move_position(Board.READING_RAILROAD)
                 if passed_go:
                     self._bank_collect(200)
 
-            elif card_id == landings.Chance.TRIP_TO_BOARDWALK:
+            elif card.id == landings.Chance.TRIP_TO_BOARDWALK:
                 self._move_position(Board.BOARDWALK)
 
-            elif card_id == landings.Chance.CHAIRMAN_OF_THE_BOARD:
+            elif card.id == landings.Chance.CHAIRMAN_OF_THE_BOARD:
                 pass
                 # TODO pay each player 50
 
-            elif card_id == landings.Chance.BUILDING_LOAN_LOAN:
+            elif card.id == landings.Chance.BUILDING_LOAN_LOAN:
                 self._bank_collect(150)
 
-            elif card_id == landings.Chance.WON_CROSSWORD_COMPETITION:
+            elif card.id == landings.Chance.WON_CROSSWORD_COMPETITION:
                 self._bank_collect(100)
 
         elif isinstance(position, landings.CommunityChest):
             # PlayerBase landed on Community Chest, pick a card and act on its instructions
-            card_id, card_text = position.select_card()
+            card = position.select_card()
 
-            if card_id == landings.CommunityChest.ADVANCE_TO_GO:
+            if card.id == landings.CommunityChest.ADVANCE_TO_GO:
                 self._move_position(Board.GO)
                 self._bank_collect(200)
                 print(
                     f"Player {self.current_player.name} has been moved to {self.current_player.position[1]} and got $200"
                 )
 
-            elif card_id == landings.CommunityChest.BANK_ERROR:
+            elif card.id == landings.CommunityChest.BANK_ERROR:
                 pass
 
-            elif card_id == landings.CommunityChest.DOCTOR_FEE:
+            elif card.id == landings.CommunityChest.DOCTOR_FEE:
                 pass
 
-            elif card_id == landings.CommunityChest.STOCK_SALE:
+            elif card.id == landings.CommunityChest.STOCK_SALE:
                 pass
 
-            elif card_id == landings.CommunityChest.GET_OUT_OF_JAIL_FREE:
+            elif card.id == landings.CommunityChest.GET_OUT_OF_JAIL_FREE:
                 pass
 
-            elif card_id == landings.CommunityChest.GO_TO_JAIL:
+            elif card.id == landings.CommunityChest.GO_TO_JAIL:
                 pass
 
-            elif card_id == landings.CommunityChest.OPERA_NIGHT:
+            elif card.id == landings.CommunityChest.OPERA_NIGHT:
                 pass
 
-            elif card_id == landings.CommunityChest.HOLIDAY_FUND:
+            elif card.id == landings.CommunityChest.HOLIDAY_FUND:
                 pass
 
-            elif card_id == landings.CommunityChest.TAX_REFUND:
+            elif card.id == landings.CommunityChest.TAX_REFUND:
                 pass
 
-            elif card_id == landings.CommunityChest.BIRTHDAY:
+            elif card.id == landings.CommunityChest.BIRTHDAY:
                 pass
 
-            elif card_id == landings.CommunityChest.LIFE_INSURANCE:
+            elif card.id == landings.CommunityChest.LIFE_INSURANCE:
                 pass
 
-            elif card_id == landings.CommunityChest.HOSPITAL_FEES:
+            elif card.id == landings.CommunityChest.HOSPITAL_FEES:
                 pass
 
-            elif card_id == landings.CommunityChest.SCHOOL_FEES:
+            elif card.id == landings.CommunityChest.SCHOOL_FEES:
                 pass
 
-            elif card_id == landings.CommunityChest.CONSULT:
+            elif card.id == landings.CommunityChest.CONSULT:
                 pass
 
-            elif card_id == landings.CommunityChest.STREET_REPAIRS:
+            elif card.id == landings.CommunityChest.STREET_REPAIRS:
                 pass
 
-            elif card_id == landings.CommunityChest.BEAUTY_CONTEST:
+            elif card.id == landings.CommunityChest.BEAUTY_CONTEST:
                 pass
 
-            elif card_id == landings.CommunityChest.INHERITANCE:
+            elif card.id == landings.CommunityChest.INHERITANCE:
                 pass
 
-        # take actions
-        if passed_go:
-            print(f"Player {self.current_player.name} passed Go!!!")
+        elif isinstance(position, landings.GoToJail):
+            # Player landed on "Go to jail", place player in jail and place them in jailed status
+            _ = self._move_position(self.board.JAIL)
+            self.current_player.in_jail = True
+
+        # Take action based on where the player landed
+        if position_id in self.board.NO_ACTION:
+            pass
 
     def play(self):
         """Runs the Monopoly game"""
@@ -397,7 +504,7 @@ class Game:
 
 if __name__ == "__main__":
     game = Game()
-    game.add_player("Avi", PlayerBase)
-    game.add_player("Sara", PlayerBase)
+    game.add_player("Avi", DefaultPlayer)
+    game.add_player("Sara", DefaultPlayer)
 
     game.play()

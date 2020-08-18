@@ -119,6 +119,26 @@ def test_board_advance_next_railroad():
     assert board.next_railroad(board.PARK_PLACE) == board.READING_RAILROAD
 
 
+def test_board_get_cards_by_owner():
+    """Verify the func returns the right cards"""
+    game = main.Game()
+    game.add_player("TestPlayer1", main.DefaultPlayer)
+    game.add_player("TestPlayer2", main.DefaultPlayer)
+    game.current_player = game.players[0]
+
+    # Get card examples
+    chance_jail_card = [c for c in game.board.chance.cards if c.id == game.board.chance.GET_OUT_OF_JAIL_FREE][0]
+    community_chest_jail_card = [c for c in game.board.community_chest.cards if c.id == game.board.community_chest.GET_OUT_OF_JAIL_FREE][0]
+
+    # Give each card to a player
+    chance_jail_card.owner = game.current_player
+    community_chest_jail_card.owner = game.players[1]
+
+    # Verify the one card we gave to the current player comes back
+    # but the 2nd one we gave to the other player does not
+    assert [chance_jail_card] == game.board.get_cards_by_owner(game.current_player)
+
+
 def test_game_advance_position():
     """Tests that the game-play functionality for moving a player according to dice roll works"""
     game = main.Game()
@@ -216,7 +236,7 @@ def test_chance_select_and_place_card():
     # Find a non "Get out of jail free" card for the test
     # "Get out of jail free" cards are not placed back into the stack
     selected_card = chance.select_card()
-    while selected_card[0] == chance.GET_OUT_OF_JAIL_FREE:
+    while selected_card.id == chance.GET_OUT_OF_JAIL_FREE:
         selected_card = chance.select_card()
 
     last_card = chance.cards[0]  # Manually get the card at the bottom of the stack
@@ -231,7 +251,7 @@ def test_chance_select_and_keep_card():
     # Find a "Get out of jail free" card for the test
     # "Get out of jail free" cards are not placed back into the stack
     selected_card = chance.select_card()
-    while selected_card[0] != chance.GET_OUT_OF_JAIL_FREE:
+    while selected_card.id != chance.GET_OUT_OF_JAIL_FREE:
         selected_card = chance.select_card()
 
     last_card = chance.cards[0]  # Manually get the card at the bottom of the stack
@@ -254,7 +274,7 @@ def test_community_chest_select_and_place_card():
     # Find a non "Get out of jail free" card for the test
     # "Get out of jail free" cards are not placed back into the stack
     selected_card = community_chest.select_card()
-    while selected_card[0] == community_chest.GET_OUT_OF_JAIL_FREE:
+    while selected_card.id == community_chest.GET_OUT_OF_JAIL_FREE:
         selected_card = community_chest.select_card()
 
     last_card = community_chest.cards[0]  # Manually get the card at the bottom of the stack
@@ -269,10 +289,71 @@ def test_community_chest_select_and_keep_card():
     # Find a "Get out of jail free" card for the test
     # "Get out of jail free" cards are not placed back into the stack
     selected_card = community_chest.select_card()
-    while selected_card[0] != community_chest.GET_OUT_OF_JAIL_FREE:
+    while selected_card.id != community_chest.GET_OUT_OF_JAIL_FREE:
         selected_card = community_chest.select_card()
 
     last_card = community_chest.cards[0]  # Manually get the card at the bottom of the stack
     assert last_card != selected_card
 
 
+def test_player_get_out_of_jail_free_cards():
+    """Verify the get_out_of_jail_free_cards() func only returns the right type of cards"""
+    game = main.Game()
+    game.add_player("TestPlayer1", main.DefaultPlayer)
+    game.current_player = game.players[0]
+
+    # Get card examples
+    chance_jail_card = [c for c in game.board.chance.cards if c.id == game.board.chance.GET_OUT_OF_JAIL_FREE][0]
+    community_chest_jail_card = \
+        [c for c in game.board.community_chest.cards if c.id == game.board.community_chest.GET_OUT_OF_JAIL_FREE][0]
+    chance_other_card = [c for c in game.board.chance.cards if c.id == game.board.chance.ADVANCE_TO_NEAREST_RAILROAD][0]
+
+    # Give the player cards including one that is not a jail card
+    # which will be filtered out by the method we are testing
+    chance_jail_card.owner = game.current_player
+    community_chest_jail_card.owner = game.current_player
+    # TODO replace with a card that makes sense like a property
+    chance_other_card.owner = game.current_player
+
+    player_jail_cards = game.current_player.get_out_of_jail_free_cards
+
+    assert chance_other_card in game.board.get_cards_by_owner(game.current_player)
+    assert chance_jail_card in player_jail_cards
+    assert community_chest_jail_card in player_jail_cards
+
+
+def test_player_withdraw_success():
+    """
+    Verify withdrawing money from the users bank removes the amount from their cash flow
+    and returns the correct amount
+    """
+    game = main.Game()
+    game.add_player("TestPlayer1", main.DefaultPlayer)
+    game.current_player = game.players[0]
+
+    cash = game.current_player.cash
+
+    amount = 50
+    returned_amount = game.current_player.withdraw(amount)
+
+    assert returned_amount == amount
+    assert cash - amount == game.current_player.cash
+
+
+def test_player_withdraw_fail():
+    """
+    Verify withdrawing money from the users bank when they don't have enough money
+    returns None and does not effect their cash flow
+    """
+    game = main.Game()
+    game.add_player("TestPlayer1", main.DefaultPlayer)
+    game.current_player = game.players[0]
+
+    game.current_player.cash = 49
+    cash = game.current_player.cash
+
+    amount = 50
+    returned_amount = game.current_player.withdraw(amount)
+
+    assert returned_amount is None
+    assert cash == game.current_player.cash
