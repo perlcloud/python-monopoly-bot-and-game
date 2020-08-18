@@ -448,6 +448,7 @@ def test_game_turn_leave_jail_card_success():
     assert chance_jail_card.owner is None
     assert len(game.current_player.get_out_of_jail_free_cards) == 0
     assert game.current_player.in_jail is False
+    # TODO add check for card presence in deck
 
 
 def test_game_turn_leave_jail_card_error():
@@ -463,6 +464,7 @@ def test_game_turn_leave_jail_card_error():
     with pytest.raises(ValueError):
         game.current_player.in_jail = True
         game._leave_jail(game.board.LEAVE_JAIL_USE_CARD)
+    # TODO add check for card presence in deck
 
 
 def test_game_turn_leave_jail_pay():
