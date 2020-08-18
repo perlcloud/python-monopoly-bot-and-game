@@ -19,21 +19,40 @@ log = logger.log
 class Dice:
     """Dice class for executing and tracking a players rolls"""
 
+    die1 = None
+    die2 = None
+
     jail_roll_count = (
         0  # Number of times player has attempted to roll a double to leave jail
     )
 
     def roll(self):
         """Roll 2 Dice"""
-        dice = [random.randint(1, 6), random.randint(1, 6)]
-        log(f"Dice rolled: {dice[0]} + {dice[1]} = {dice[0] + dice[1]}")
+        self.die1, self.die2 = random.randint(1, 6), random.randint(1, 6)
+        log(f"Dice rolled: {self.die1} + {self.die2} = {self.total}")
 
-        return {
-            0: dice[0],
-            1: dice[1],
-            "total": dice[0] + dice[1],
-            "same": dice[0] == dice[1],
-        }
+    @property
+    def total(self):
+        try:
+            return self.die1 + self.die2
+        except TypeError:
+            return None
+
+    @property
+    def same(self):
+        return (
+            self.die1 == self.die2
+            if isinstance(self.die1, int) and isinstance(self.die2, int)
+            else None
+        )
+
+    def reset(self):
+        self.die1 = None
+        self.die2 = None
+
+    @property
+    def active(self):
+        return isinstance(self.total, int)
 
 
 class Board:
@@ -190,17 +209,20 @@ class Board:
 class PlayerBase:
     """Base Class for a Monopoly player"""
 
+    game = None
     id = None
-    position = (0, Board.landings[0])
+    position = None
     name = None
-    dice = Dice()
+    dice = None
     cash = None
     __in_jail = False
 
     def __init__(self, name, game):
-        self.id = uuid.uuid4()
-        self.name = name
         self.game = game
+        self.id = uuid.uuid4()
+        self.position = (0, Board.landings[0])
+        self.name = name
+        self.dice = Dice()
         self.cash = self.game.bank.withdraw(1500)
 
     @property
@@ -210,6 +232,10 @@ class PlayerBase:
     @in_jail.setter
     def in_jail(self, status):
         log("Player now in Jail" if status else "Player released from Jail")
+
+        if not status:
+            self.dice.jail_roll_count = 0
+
         self.__in_jail = status
 
     @property
@@ -329,8 +355,6 @@ class Game:
 
         log(f"Starting position: {self.current_player.position[1]}")
 
-        roll = None
-
         # If the player is in jail, attempt to leave
         if self.current_player.in_jail:
             log(f"Player is in Jail")
@@ -360,30 +384,32 @@ class Game:
                 self.bank.deposit(cash)
                 self.current_player.in_jail = False
             elif selected_option == self.board.LEAVE_JAIL_ROLL:
-                roll = self.current_player.dice.roll()
-                if not roll["same"]:
+                dice = self.current_player.dice
+                dice.roll()
+                if not dice.same:
                     # The player did not roll a double and remains in jail
-                    self.current_player.dice.jail_roll_count += 1
-                    if self.current_player.dice.jail_roll_count == 3:
+                    dice.jail_roll_count += 1
+                    if dice.jail_roll_count == 3:
                         # If this is the 3rd try at rolling a double, player is forced to pay $50 and use the roll
                         log(
                             "This was your 3rd roll attempt to leave Jail, you must now pay $50 and move on"
                         )
                         cash = self.current_player.withdraw(50)
                         self.bank.deposit(cash)
-                        self.current_player.dice.jail_roll_count = 0
+                        dice.jail_roll_count = 0
                         self.current_player.in_jail = False
                     else:
                         return
                 else:
-                    self.current_player.dice.jail_roll_count = 0
+                    dice.jail_roll_count = 0
                     self.current_player.in_jail = False
 
         # roll dice
-        roll = self.current_player.dice.roll() if not roll else roll
+        if not self.current_player.dice.active:
+            self.current_player.dice.roll()
 
         # move players piece
-        passed_go = self._advance_position(roll["total"])
+        passed_go = self._advance_position(self.current_player.dice.total)
 
         if passed_go:
             log("Passed go, collecting $200")
@@ -549,9 +575,15 @@ class Game:
             for player in self.players:
                 self.current_player = player
 
+                # pre turn setup
                 logger.player = self.current_player
+
+                # take turn
                 self.run_turn()
+
+                # post turn teardown
                 logger.player = None
+                self.current_player.dice.reset()
 
 
 if __name__ == "__main__":

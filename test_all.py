@@ -5,24 +5,13 @@ import main
 import landings
 
 
-def test_dice_return_dict():
-    """Verify the dice roll returns expected values"""
-    dice = main.Dice()
-    roll = dice.roll()
-
-    assert type(roll) == dict, "Returned array is not a dictionary"
-
-    for key in [0, 1, "total", "same"]:
-        assert key in roll.keys(), f"key '{key}' missing"
-
-
 def test_dice_correct_total():
     """Verify the dice roll total value is correct"""
     dice = main.Dice()
-    roll = dice.roll()
+    dice.roll()
 
     assert (
-        roll[0] + roll[1] == roll["total"]
+        dice.die1 + dice.die2 == dice.total
     ), "The 'total' value for the dice roll does not match the value rolled"
 
 
@@ -32,10 +21,10 @@ def test_dice_matching_values(mock_randint):
     mock_randint.side_effect = [5, 5]
 
     dice = main.Dice()
-    roll = dice.roll()
+    dice.roll()
 
-    assert roll[0] == roll[1]
-    assert roll["same"] is True
+    assert dice.die1 == dice.die2
+    assert dice.same is True
 
 
 @mock.patch("main.random.randint")
@@ -44,10 +33,56 @@ def test_dice_non_matching_values(mock_randint):
     mock_randint.side_effect = [5, 6]
 
     dice = main.Dice()
-    roll = dice.roll()
+    dice.roll()
 
-    assert roll[0] != roll[1]
-    assert roll["same"] is False
+    assert dice.die1 != dice.die2
+    assert dice.same is False
+
+
+def test_dice_reset():
+    """Verify the reset function sets the dice to unrolled status"""
+    dice = main.Dice()
+    dice.roll()
+
+    assert isinstance(dice.die1, int) is True
+    assert isinstance(dice.die2, int) is True
+    assert isinstance(dice.total, int) is True
+    assert isinstance(dice.same, bool) is True
+    assert dice.active is True
+
+    dice.reset()
+
+    assert dice.die1 is None
+    assert dice.die2 is None
+    assert dice.total is None
+    assert dice.same is None
+    assert dice.active is False
+
+
+def test_dice_persistent_jail_count():
+    """Verify the reset func does not effect the jail roll count"""
+    dice = main.Dice()
+    dice.roll()
+
+    dice.jail_roll_count += 1
+    dice.reset()
+
+    assert dice.jail_roll_count > 0
+
+
+def test_dice_jail_count_reset():
+    """Verify the number of jail rolls is reset when the player leaves jail"""
+    game = main.Game()
+    game.add_player("TestPlayer", main.PlayerBase)
+    game.current_player = game.players[0]
+    game.current_player.in_jail = True
+
+    game.current_player.dice.roll()
+
+    game.current_player.dice.jail_roll_count += 1
+    game.current_player.in_jail = False
+
+    assert game.current_player.dice.jail_roll_count == 0
 
 
 def test_board_len():
