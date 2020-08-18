@@ -3,6 +3,19 @@ import random
 import landings
 
 
+class Logger:
+
+    player = None
+
+    def log(self, msg):
+        msg = f"[{self.player.name}] {msg}" if self.player else "t" + msg
+        print(msg)
+
+
+logger = Logger()
+log = logger.log
+
+
 class Dice:
     """Dice class for executing and tracking a players rolls"""
 
@@ -13,6 +26,8 @@ class Dice:
     def roll(self):
         """Roll 2 Dice"""
         dice = [random.randint(1, 6), random.randint(1, 6)]
+        log(f"Dice rolled: {dice[0]} + {dice[1]} = {dice[0] + dice[1]}")
+
         return {
             0: dice[0],
             1: dice[1],
@@ -180,13 +195,22 @@ class PlayerBase:
     name = None
     dice = Dice()
     cash = None
-    in_jail = False
+    __in_jail = False
 
     def __init__(self, name, game):
         self.id = uuid.uuid4()
         self.name = name
         self.game = game
         self.cash = self.game.bank.withdraw(1500)
+
+    @property
+    def in_jail(self):
+        return self.__in_jail
+
+    @in_jail.setter
+    def in_jail(self, status):
+        log("Player now in Jail" if status else "Player released from Jail")
+        self.__in_jail = status
 
     @property
     def get_out_of_jail_free_cards(self):
@@ -213,6 +237,8 @@ class PlayerBase:
         value = amount if amount <= self.cash else None
         if value:
             self.cash -= amount
+
+        log(f"${value} withdrawn, remaining balance is ${self.cash}")
 
         return value
 
@@ -252,12 +278,18 @@ class Game:
     board = Board()
     bank = Bank()
     current_player = None
+    logger = None
 
     def _advance_position(self, roll_value):
         """Advances a players position based on a spin of the dice"""
         self.current_player.position, passed_go = self.board.advance(
             self.current_player.position[0], roll_value
         )
+
+        log(f"Position advanced to: {self.current_player.position}")
+        if passed_go:
+            log("Passed GO!")
+
         return passed_go
 
     def _move_position(self, position_id, backwards_movement=False):
@@ -270,12 +302,22 @@ class Game:
             else False
         )
         self.current_player.position = (position_id, self.board.landings[position_id])
+
+        log(
+            f"Position moved {'backwards ' if backwards_movement else ''}to: {self.current_player.position}"
+        )
+        if passed_go:
+            log("Passed GO!")
+
         return passed_go
 
     def _bank_collect(self, amount):
         """Collects money from the Bank"""
         self.bank.withdraw(amount)
         self.current_player.cash += amount
+        log(
+            f"${amount} deposited from the bank - cash on hand now ${self.current_player.cash}"
+        )
 
     def add_player(self, name, player_obj):
         """Adds a player to the game"""
@@ -285,17 +327,17 @@ class Game:
         """Runs the run_turn for the current player"""
         # TODO split out this code and write tests for all of it
 
-        print(
-            f"Player {self.current_player.name} is on {self.current_player.position[1]}"
-        )
+        log(f"Starting position: {self.current_player.position[1]}")
 
         roll = None
 
         # If the player is in jail, attempt to leave
         if self.current_player.in_jail:
+            log(f"Player is in Jail")
+
             # Player must now choose between paying $50, using a get out of jail free card, or trying to roll a double
-            print(f"Player {self.current_player.name} is in Jail")
             selected_option = self.current_player.leave_jail_option()
+            log(f"Player chooses to exit Jail with the option: '{selected_option}'")
 
             if selected_option == self.board.LEAVE_JAIL_USE_CARD:
                 if len(self.current_player.get_out_of_jail_free_cards) > 0:
@@ -305,6 +347,10 @@ class Game:
                     if card.deck_code_name == "chance":
                         self.board.chance.place_card_at_bottom(card)
                     self.current_player.in_jail = False
+                    log(
+                        f"Player used a 'Get out of Jail free' card"
+                        f" - {len(self.current_player.get_out_of_jail_free_cards)} cards remaining"
+                    )
                 else:
                     raise ValueError(
                         "You cannot choose to use a card you don't have, cheater!"
@@ -320,6 +366,9 @@ class Game:
                     self.current_player.dice.jail_roll_count += 1
                     if self.current_player.dice.jail_roll_count == 3:
                         # If this is the 3rd try at rolling a double, player is forced to pay $50 and use the roll
+                        log(
+                            "This was your 3rd roll attempt to leave Jail, you must now pay $50 and move on"
+                        )
                         cash = self.current_player.withdraw(50)
                         self.bank.deposit(cash)
                         self.current_player.dice.jail_roll_count = 0
@@ -332,15 +381,12 @@ class Game:
 
         # roll dice
         roll = self.current_player.dice.roll() if not roll else roll
-        print(f"Player {self.current_player.name} rolled {roll['total']}")
 
         # move players piece
         passed_go = self._advance_position(roll["total"])
-        print(
-            f"Player {self.current_player.name} is now on {self.current_player.position[1]}"
-        )
 
         if passed_go:
+            log("Passed go, collecting $200")
             self._bank_collect(200)
 
         # take action based on where the player landed
@@ -349,13 +395,11 @@ class Game:
         if isinstance(position, landings.Chance):
             # PlayerBase landed on Chance, pick a card and act on its instructions
             card = position.select_card()
+            log(f"Selected Chance card: '{card.name}'")
 
             if card.id == landings.Chance.ADVANCE_TO_GO:
                 self._move_position(Board.GO)
                 self._bank_collect(200)
-                print(
-                    f"Player {self.current_player.name} has been moved to {self.current_player.position[1]} and got $200"
-                )
 
             elif card.id == landings.Chance.ADVANCE_TO_ILLINOIS:
                 passed_go = self._move_position(Board.ILLINOIS_AVE)
@@ -400,7 +444,6 @@ class Game:
             elif card.id == landings.Chance.GO_TO_JAIL:
                 self.current_player.position = 10, self._move_position(Board.JAIL)
                 self.current_player.in_jail = True
-                # TODO write Jail code
 
             elif card.id == landings.Chance.GENERAL_REPAIRS:
                 pass
@@ -430,13 +473,11 @@ class Game:
         elif isinstance(position, landings.CommunityChest):
             # PlayerBase landed on Community Chest, pick a card and act on its instructions
             card = position.select_card()
+            log(f"Selected Community Chest card: '{card.name}'")
 
             if card.id == landings.CommunityChest.ADVANCE_TO_GO:
                 self._move_position(Board.GO)
                 self._bank_collect(200)
-                print(
-                    f"Player {self.current_player.name} has been moved to {self.current_player.position[1]} and got $200"
-                )
 
             elif card.id == landings.CommunityChest.BANK_ERROR:
                 pass
@@ -507,8 +548,10 @@ class Game:
 
             for player in self.players:
                 self.current_player = player
-                # player.run_turn()
+
+                logger.player = self.current_player
                 self.run_turn()
+                logger.player = None
 
 
 if __name__ == "__main__":

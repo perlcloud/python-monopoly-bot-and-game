@@ -35,7 +35,6 @@ class DeckBase(LandingsBase):
     def select_card(self):
         """Selects a card, placing the card at the bottom of the pile if the player does no keep the card"""
         card = self._get_top_card()
-        print(f"Chance card selected: {card}")
 
         if not card.id == self.GET_OUT_OF_JAIL_FREE:
             self.place_card_at_bottom(card)
