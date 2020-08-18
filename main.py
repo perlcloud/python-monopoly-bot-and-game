@@ -6,7 +6,9 @@ import landings
 class Dice:
     """Dice class for executing and tracking a players rolls"""
 
-    jail_roll_count = 0  # Number of times player has attempted to roll a double to leave jail
+    jail_roll_count = (
+        0  # Number of times player has attempted to roll a double to leave jail
+    )
 
     def roll(self):
         """Roll 2 Dice"""
@@ -161,8 +163,12 @@ class Board:
             return self.SHORTLINE
 
     def get_cards_by_owner(self, player):
-        chance_cards = [c for c in self.chance.cards if c.owner and c.owner.id == player.id]
-        community_chest_cards = [c for c in self.community_chest.cards if c.owner and c.owner.id == player.id]
+        chance_cards = [
+            c for c in self.chance.cards if c.owner and c.owner.id == player.id
+        ]
+        community_chest_cards = [
+            c for c in self.community_chest.cards if c.owner and c.owner.id == player.id
+        ]
         return chance_cards + community_chest_cards
 
 
@@ -186,11 +192,12 @@ class PlayerBase:
     def get_out_of_jail_free_cards(self):
         cards = self.game.board.get_cards_by_owner(self)
         cards = [
-            c for c in cards
+            c
+            for c in cards
             if c.deck_code_name == "community_chest"
-               and c.id == landings.CommunityChest.GET_OUT_OF_JAIL_FREE
+            and c.id == landings.CommunityChest.GET_OUT_OF_JAIL_FREE
             or c.deck_code_name == "chance"
-               and c.id == landings.Chance.GET_OUT_OF_JAIL_FREE
+            and c.id == landings.Chance.GET_OUT_OF_JAIL_FREE
         ]
         return cards
 
@@ -299,7 +306,9 @@ class Game:
                         self.board.chance.place_card_at_bottom(card)
                     self.current_player.in_jail = False
                 else:
-                    raise ValueError("You cannot choose to use a card you don't have, cheater!")
+                    raise ValueError(
+                        "You cannot choose to use a card you don't have, cheater!"
+                    )
             elif selected_option == self.board.LEAVE_JAIL_PAY:
                 cash = self.current_player.withdraw(50)
                 self.bank.deposit(cash)

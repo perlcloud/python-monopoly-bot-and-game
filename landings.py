@@ -60,7 +60,7 @@ class CardBase:
         return self.deck.lower().replace(" ", "_")
 
     def __str__(self):
-        return f"{self.deck}({self.id}, \"{self.name}\", {self.owner})"
+        return f'{self.deck}({self.id}, "{self.name}", {self.owner})'
 
 
 class Chance(DeckBase):
@@ -86,62 +86,66 @@ class Chance(DeckBase):
     name = "Chance"
     cards = [
         CardBase(ADVANCE_TO_GO, 'Advance to "Go". (Collect $200).', name),
-        CardBase(ADVANCE_TO_ILLINOIS, "Advance to Illinois Ave. If you pass Go, collect $200.", name),
+        CardBase(
+            ADVANCE_TO_ILLINOIS,
+            "Advance to Illinois Ave. If you pass Go, collect $200.",
+            name,
+        ),
         CardBase(
             ADVANCE_TO_ST_CHARLES_PLACE,
             "Advance to St. Charles Place. If you pass Go, collect $200.",
-            name
+            name,
         ),
         CardBase(
             ADVANCE_TO_NEAREST_UTILITY,
             "Advance token to nearest Utility. If unowned, you may buy it from the Bank. "
             "If owned, throw dice and pay owner a total 10 times the amount thrown.",
-            name
+            name,
         ),
         CardBase(
             ADVANCE_TO_NEAREST_RAILROAD,
             "Advance token to the nearest Railroad and pay owner twice the rental to which "
             "he/she is otherwise entitled. If Railroad is unowned, you may buy it from the Bank.",
-            name
+            name,
         ),
         CardBase(BANKS_PAYS_DIVIDEND, "Bank pays you dividend of $50.", name),
         CardBase(
             GET_OUT_OF_JAIL_FREE,
             "Get out of Jail Free. This card may be kept until needed, or traded/sold.",
-            name
+            name,
         ),
         CardBase(GO_BACK_THREE, "Go Back Three Spaces.", name),
         CardBase(
             GO_TO_JAIL,
             "Go to Jail. Go directly to Jail. Do not pass GO, do not collect $200.",
-            name
+            name,
         ),
         CardBase(
             GENERAL_REPAIRS,
             "Make general repairs on all your property: For each house pay $25, For each hotel pay $100.",
-            name
+            name,
         ),
         CardBase(POOR_TAX, "Pay poor tax of $15", name),
         CardBase(
             TRIP_TO_READING_RAILROAD,
             "Take a trip to Reading Railroad. If you pass Go, collect $200.",
-            name
+            name,
         ),
         CardBase(
             TRIP_TO_BOARDWALK,
             "Take a walk on the Boardwalk. Advance token to Boardwalk.",
-            name
+            name,
         ),
         CardBase(
             CHAIRMAN_OF_THE_BOARD,
             "You have been elected Chairman of the Board. Pay each player $50.",
-            name
+            name,
         ),
         CardBase(BUILDING_LOAN_LOAN, "Your building loan matures. Receive $150.", name),
         CardBase(
             WON_CROSSWORD_COMPETITION,
             "You have won a crossword competition. Collect $100.",
-            name
+            name,
         ),
     ]
 
@@ -178,9 +182,11 @@ class CommunityChest(DeckBase):
         CardBase(
             OPERA_NIGHT,
             "Grand Opera Night. Collect $50 from every player for opening night seats.",
-            name
+            name,
         ),
-        CardBase(HOLIDAY_FUND, "Holiday {Xmas} Fund matures. Receive {Collect} $100.", name),
+        CardBase(
+            HOLIDAY_FUND, "Holiday {Xmas} Fund matures. Receive {Collect} $100.", name
+        ),
         CardBase(TAX_REFUND, "Income tax refund. Collect $20.", name),
         CardBase(BIRTHDAY, "It is your birthday. Collect $10 from every player.", name),
         CardBase(LIFE_INSURANCE, "Life insurance matures – Collect $100", name),
@@ -190,9 +196,13 @@ class CommunityChest(DeckBase):
         CardBase(
             STREET_REPAIRS,
             "You are assessed for street repairs: Pay $40 per house and $115 per hotel you own.",
-            name
+            name,
         ),
-        CardBase(BEAUTY_CONTEST, "You have won second prize in a beauty contest. Collect $10.", name),
+        CardBase(
+            BEAUTY_CONTEST,
+            "You have won second prize in a beauty contest. Collect $10.",
+            name,
+        ),
         CardBase(INHERITANCE, "You inherit $100.", name),
     ]
 

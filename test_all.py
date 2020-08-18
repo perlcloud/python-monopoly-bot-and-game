@@ -127,8 +127,16 @@ def test_board_get_cards_by_owner():
     game.current_player = game.players[0]
 
     # Get card examples
-    chance_jail_card = [c for c in game.board.chance.cards if c.id == game.board.chance.GET_OUT_OF_JAIL_FREE][0]
-    community_chest_jail_card = [c for c in game.board.community_chest.cards if c.id == game.board.community_chest.GET_OUT_OF_JAIL_FREE][0]
+    chance_jail_card = [
+        c
+        for c in game.board.chance.cards
+        if c.id == game.board.chance.GET_OUT_OF_JAIL_FREE
+    ][0]
+    community_chest_jail_card = [
+        c
+        for c in game.board.community_chest.cards
+        if c.id == game.board.community_chest.GET_OUT_OF_JAIL_FREE
+    ][0]
 
     # Give each card to a player
     chance_jail_card.owner = game.current_player
@@ -156,7 +164,10 @@ def test_game_move_position_forward():
     game = main.Game()
     game.add_player("TestPlayer", main.PlayerBase)
     game.current_player = game.players[0]
-    game.current_player.position = (game.board.COMMUNITY_CHEST_2, game.board.landings[game.board.COMMUNITY_CHEST_2])
+    game.current_player.position = (
+        game.board.COMMUNITY_CHEST_2,
+        game.board.landings[game.board.COMMUNITY_CHEST_2],
+    )
 
     passed_go = game._move_position(game.board.ST_CHARLES_PLACE)
 
@@ -169,7 +180,10 @@ def test_game_move_position_backwards():
     game = main.Game()
     game.add_player("TestPlayer", main.PlayerBase)
     game.current_player = game.players[0]
-    game.current_player.position = (game.board.MEDITIRANEAN_AVE, game.board.landings[game.board.MEDITIRANEAN_AVE])
+    game.current_player.position = (
+        game.board.MEDITIRANEAN_AVE,
+        game.board.landings[game.board.MEDITIRANEAN_AVE],
+    )
 
     passed_go = game._move_position(game.board.LUXERY_TAX)
 
@@ -277,7 +291,9 @@ def test_community_chest_select_and_place_card():
     while selected_card.id == community_chest.GET_OUT_OF_JAIL_FREE:
         selected_card = community_chest.select_card()
 
-    last_card = community_chest.cards[0]  # Manually get the card at the bottom of the stack
+    last_card = community_chest.cards[
+        0
+    ]  # Manually get the card at the bottom of the stack
     assert last_card == selected_card
     assert second_to_last_card != selected_card
 
@@ -292,7 +308,9 @@ def test_community_chest_select_and_keep_card():
     while selected_card.id != community_chest.GET_OUT_OF_JAIL_FREE:
         selected_card = community_chest.select_card()
 
-    last_card = community_chest.cards[0]  # Manually get the card at the bottom of the stack
+    last_card = community_chest.cards[
+        0
+    ]  # Manually get the card at the bottom of the stack
     assert last_card != selected_card
 
 
@@ -303,10 +321,21 @@ def test_player_get_out_of_jail_free_cards():
     game.current_player = game.players[0]
 
     # Get card examples
-    chance_jail_card = [c for c in game.board.chance.cards if c.id == game.board.chance.GET_OUT_OF_JAIL_FREE][0]
-    community_chest_jail_card = \
-        [c for c in game.board.community_chest.cards if c.id == game.board.community_chest.GET_OUT_OF_JAIL_FREE][0]
-    chance_other_card = [c for c in game.board.chance.cards if c.id == game.board.chance.ADVANCE_TO_NEAREST_RAILROAD][0]
+    chance_jail_card = [
+        c
+        for c in game.board.chance.cards
+        if c.id == game.board.chance.GET_OUT_OF_JAIL_FREE
+    ][0]
+    community_chest_jail_card = [
+        c
+        for c in game.board.community_chest.cards
+        if c.id == game.board.community_chest.GET_OUT_OF_JAIL_FREE
+    ][0]
+    chance_other_card = [
+        c
+        for c in game.board.chance.cards
+        if c.id == game.board.chance.ADVANCE_TO_NEAREST_RAILROAD
+    ][0]
 
     # Give the player cards including one that is not a jail card
     # which will be filtered out by the method we are testing
