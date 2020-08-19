@@ -184,7 +184,7 @@ class CommunityChest(DeckBase):
             name,
         ),
         CardBase(
-            HOLIDAY_FUND, "Holiday {Xmas} Fund matures. Receive {Collect} $100.", name
+            HOLIDAY_FUND, "Holiday Fund matures. Receive $100.", name
         ),
         CardBase(TAX_REFUND, "Income tax refund. Collect $20.", name),
         CardBase(BIRTHDAY, "It is your birthday. Collect $10 from every player.", name),

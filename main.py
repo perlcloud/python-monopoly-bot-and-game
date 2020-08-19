@@ -475,7 +475,7 @@ class Game:
                 self._move_position(go_back_to, backwards_movement=True)
 
             elif card.id == landings.Chance.GO_TO_JAIL:
-                self.current_player.position = 10, self._move_position(Board.JAIL)
+                self._move_position(Board.JAIL)
                 self.current_player.in_jail = True
 
             elif card.id == landings.Chance.GENERAL_REPAIRS:
@@ -513,37 +513,40 @@ class Game:
                 self._bank_collect(200)
 
             elif card.id == landings.CommunityChest.BANK_ERROR:
-                pass
+                self._bank_collect(200)
 
             elif card.id == landings.CommunityChest.DOCTOR_FEE:
-                pass
+                self.bank.deposit(self.current_player.withdraw(50))
 
             elif card.id == landings.CommunityChest.STOCK_SALE:
-                pass
+                self._bank_collect(50)
 
             elif card.id == landings.CommunityChest.GET_OUT_OF_JAIL_FREE:
-                pass
+                card.owner = self.current_player
 
             elif card.id == landings.CommunityChest.GO_TO_JAIL:
-                pass
+                self._move_position(Board.JAIL)
+                self.current_player.in_jail = True
 
             elif card.id == landings.CommunityChest.OPERA_NIGHT:
+                # Collect $50 from each player
                 pass
 
             elif card.id == landings.CommunityChest.HOLIDAY_FUND:
-                pass
+                self._bank_collect(50)
 
             elif card.id == landings.CommunityChest.TAX_REFUND:
-                pass
+                self._bank_collect(20)
 
             elif card.id == landings.CommunityChest.BIRTHDAY:
+                # Collect 10 from each player
                 pass
 
             elif card.id == landings.CommunityChest.LIFE_INSURANCE:
-                pass
+                self._bank_collect(100)
 
             elif card.id == landings.CommunityChest.HOSPITAL_FEES:
-                pass
+                self.bank.deposit(self.current_player.withdraw(50))
 
             elif card.id == landings.CommunityChest.SCHOOL_FEES:
                 pass
